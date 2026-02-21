@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Application Sandbox/Application Sandbox.vcxproj" Id="b209dc20-0601-434b-a198-fdfece63c5f8" />
+  <Project Path="Engine Core/Engine Core.vcxproj" Id="f0979512-a9be-409a-b77f-0b71a204cfc3" />
+</Solution>
