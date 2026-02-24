@@ -8,19 +8,20 @@ public:
 	virtual ~IScene() = default;
 	virtual void OnStart() {}
 	virtual void OnDraw() {}
-	Actor Root() { return sceneRoot; }
+	inline Actor Root() { return sceneRoot; }
+	template<ActorConcept T, typename... Args> Actor Top(Args&&... args) { return Root().Add<T>(args...); }
 private:
 	SceneActors actors;
 	Actor sceneRoot = Actor(&actors);
 };
 
 template<typename T>
-concept Scene = std::is_base_of_v<IScene, T> && !std::is_same_v<IScene, T>;
+concept SceneConcept = std::is_base_of_v<IScene, T> && !std::is_same_v<IScene, T>;
 
 class SceneManager {
 public:
 	SceneManager(AppContext* context) : appContext(context) {};
-	template<Scene T>
+	template<SceneConcept T>
 	void SetStartScene() {
 		activeScene = std::make_unique<T>();
 		activeScene->OnStart();

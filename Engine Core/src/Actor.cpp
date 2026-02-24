@@ -16,7 +16,7 @@ Actor Actor::operator[](int index) const {
 	return subActor;
 }
 
-Actor Actor::GetSuper() const {
+Actor Actor::Super() const {
 	ThrowIfFreed();
 	if (!HasSuper()) throw std::runtime_error("Attempted to access a super-actor from scene root!");
 	ActorUUID superUUID = GetActorMapRef(selfUUID)->superActor;
@@ -29,14 +29,12 @@ void Actor::DeleteActor(bool manualDeletion) {
 	if (!willDelete) return;
 	DeleteAllSub();
 	GetActorMapRef(selfUUID).reset();
-	std::cout << "Deleted: " << selfUUID << std::endl;
 	sceneActors->erase(selfUUID);
 }
 
 Actor::Actor(SceneActors* actors) : sceneActors(actors), selfUUID(MakeUUID()) {
 	GetActorMapRef(selfUUID) = std::make_unique<Container>();
 	deletableOnDestruction = true;
-	std::cout << "ROOT: " << selfUUID << std::endl;
 }
 
 Actor::Actor(const Actor& copy) {
@@ -56,3 +54,6 @@ void Actor::DeleteAllSub() {
 		subActor.Delete();
 	}
 }
+
+Actor::~Actor() { DeleteActor(false); }
+void Actor::Delete() { DeleteActor(true); }

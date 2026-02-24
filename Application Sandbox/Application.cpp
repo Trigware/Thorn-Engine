@@ -1,4 +1,4 @@
-#include <App.h>
+#include <Thorn.h>
 
 enum class TextureID {
 	TestTexture
@@ -9,11 +9,10 @@ enum class AudioID {
 };
 
 class StartScene : public IScene {
-	Actor test = Root().Add<Container>();
+	Actor sprite = Top<Sprite>();
 	void OnStart() override {
-		Actor sub1 = test.Add<Container>(), sub2 = test.Add<Container>(), subsub = sub1.Add<Container>();
-		test.DeleteAllSub();
-		std::cout << "TEST: " << test.IsInScene() << ", SUB1: " << sub1.GetSuper().GetUUID() << ", SUBSUB: " << subsub.IsInScene() << std::endl;
+		auto& comp = sprite.Get<Transform>();
+		std::cout << comp << std::endl;
 	}
 };
 

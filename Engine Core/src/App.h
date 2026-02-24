@@ -34,7 +34,7 @@ public:
 		LoadNewResourceType<Args...>();
 	}
 
-	template<Scene T>
+	template<SceneConcept T>
 	void Run() {
 		if (hasTerminated) Init();
 		sceneManager.SetStartScene<T>();
