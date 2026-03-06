@@ -80,8 +80,11 @@ private:
 	void ParseIntegerSegment();
 	void ParseTextualSegment();
 	inline bool PartOfSegment(char ch);
-	inline bool IsNumber(char ch);
+	inline bool IsNumeral(char ch);
 	inline bool IsLetter(char ch);
+	inline bool IsSign(char ch);
+	int ParseInt(const std::string& numAsStr);
+	inline bool IsLastAccumilated(char ch);
 	void AddResourceMetadataElement();
 	void ParsePropertyContent();
 	void ParseIntegerProperty();

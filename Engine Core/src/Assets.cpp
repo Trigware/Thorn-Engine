@@ -34,9 +34,9 @@ void AssetParser::ParseLineMetaData(const std::string& currentLine) {
 		bool isWhitespace = ch == ' ' || ch == '\t';
 		if (isWhitespace && (!afterPropertyAssignmentChar || accumilatedString == "")) continue;
 		parsedMeaningfulChar = true;
-		if (!parsedSinceSegment) currentSegmentNumber = IsNumber(ch);
+		if (!parsedSinceSegment) currentSegmentNumber = IsNumeral(ch);
 
-		bool isCurrentNumber = IsNumber(ch), numberEnding = currentSegmentNumber != isCurrentNumber && currentSegmentNumber, segmentTerminatorChar = !PartOfSegment(ch),
+		bool isCurrentNumber = IsNumeral(ch), numberEnding = currentSegmentNumber != isCurrentNumber && currentSegmentNumber, segmentTerminatorChar = !PartOfSegment(ch),
 			segmentTerminated = (numberEnding || segmentTerminatorChar) && !afterPropertyAssignmentChar;
 
 		if (segmentTerminated) {
@@ -53,13 +53,15 @@ void AssetParser::ParseLineMetaData(const std::string& currentLine) {
 	if (!isInResourceHeader && parsedMeaningfulChar) ParsePropertyContent(); 
 }
 
-inline bool AssetParser::PartOfSegment(char ch) { return IsNumber(ch) || IsLetter(ch); }
-inline bool AssetParser::IsNumber(char ch) { return ch >= '0' && ch <= '9'; }
+inline bool AssetParser::PartOfSegment(char ch) { return IsNumeral(ch) || IsLetter(ch); }
+inline bool AssetParser::IsNumeral(char ch) { return ch >= '0' && ch <= '9'; }
 inline bool AssetParser::IsLetter(char ch) { return ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z'; }
+inline bool AssetParser::IsSign(char ch) { return ch == '+' || ch == '-'; }
+inline bool AssetParser::IsLastAccumilated(char ch) { return accumilatedString.size() > 0 && accumilatedString[accumilatedString.size() - 1] == ch; }
 
 void AssetParser::ParseSegment() {
 	if (accumilatedString == "") return;
-	bool segmentIsNumber = IsNumber(accumilatedString[0]);
+	bool segmentIsNumber = IsNumeral(accumilatedString[0]);
 	if (segmentIndex == 0) isInResourceHeader = segmentIsNumber;
 
 	if (segmentIsNumber) ParseIntegerSegment();
@@ -130,10 +132,10 @@ std::string AssetParser::GetResourceDirectory() {
 
 void AssetParser::ParsePropertyContent() {
 	propertyValue = std::monostate();
-	char firstSymbol = accumilatedString[0];
+	char firstSymbol = accumilatedString.size() == 0 ? '\0' : accumilatedString[0];
 	if (firstSymbol == '(') ParseVectorProperty();
 	if (firstSymbol == '"') ParseStringProperty();
-	if (IsNumber(firstSymbol)) ParseIntegerProperty();
+	if (IsNumeral(firstSymbol) || IsSign(firstSymbol)) propertyValue = ParseInt(accumilatedString);
 
 	if (std::holds_alternative<std::monostate>(propertyValue))
 		throw std::runtime_error("When parsing a metadata property, the type of it's value could not be determined!");
@@ -142,13 +144,37 @@ void AssetParser::ParsePropertyContent() {
 	currentResource.properties[propertyName] = propertyValue;
 }
 
-void AssetParser::ParseIntegerProperty() {
-	propertyValue = 0;
+int AssetParser::ParseInt(const std::string& numAsStr) {
+	for (int i = 0; i < numAsStr.size(); i++) {
+		char ch = numAsStr[i];
+		if (!IsNumeral(ch) && (!IsSign(ch) || i > 0)) throw std::runtime_error("Encountered an invalid character while trying to parse an integer in a metadata file!");
+	}
+	int result = std::stoi(numAsStr);
+	return result;
 }
 
 void AssetParser::ParseVectorProperty() {
-	propertyValue = std::vector<int>{32, 32};
+	int valueSize = accumilatedString.size();
+	if (!IsLastAccumilated(')')) throw std::runtime_error("Expected a ')' when ending a vector literal!");
+	std::vector<int> result;
+	std::string possibleNumberAsStr = "";
+
+	for (int i = 1; i < valueSize-1; i++) {
+		char ch = accumilatedString[i];
+		if (ch == ' ') continue;
+		if (ch == ',') {
+			result.push_back(ParseInt(possibleNumberAsStr));
+			possibleNumberAsStr = "";
+			continue;
+		}
+		possibleNumberAsStr += ch;
+	}
+	if (possibleNumberAsStr != "") result.push_back(ParseInt(possibleNumberAsStr));
+
+	propertyValue = result;
 }
 void AssetParser::ParseStringProperty() {
-	propertyValue = "";
+	if (!IsLastAccumilated('"')) throw std::runtime_error("Expected a '\"' when ending a string literal!");
+	std::string result = accumilatedString.substr(1, accumilatedString.size() - 2);
+	propertyValue = result;
 }
