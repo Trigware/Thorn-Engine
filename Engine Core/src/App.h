@@ -3,7 +3,8 @@
 #include <SDL.h>
 #include <memory>
 #include <stdexcept>
-#include "Assets.h"
+#include <filesystem>
+#include <unordered_map>
 #include "AppContext.h"
 #include "Scene.h"
 
@@ -18,13 +19,14 @@ enum class ExitCode {
 
 struct AppConfig {
 	std::string initWindowTitle;
-	int initWidth, initHeight;
-	AppConfig(const std::string& title, int width, int height) : initWindowTitle(title), initWidth(width), initHeight(height) {}
+	int initWidth = 0, initHeight = 0;
+	std::filesystem::path mainPath;
 };
 
 class App {
 public:
-	App(const AppConfig& config);
+	App(const AppConfig& config) : appConfig(config) {}
+	App(const std::string& title, int width, int height) : appConfig(AppConfig(title, width, height)) {}
 	inline int GetExitCode() { return static_cast<int>(exitCode); }
 
 	template<typename... Args>
@@ -36,15 +38,14 @@ public:
 
 	template<SceneConcept T>
 	void Run() {
-		if (hasTerminated) Init();
+		Init();
 		sceneManager.SetStartScene<T>();
 		TerminateApplication();
-		hasTerminated = true;
 	}
 
 	AppConfig appConfig;
 private:
-	ExitCode Init();
+	void Init();
 
 	template<typename Type, typename ID, typename... Rest>
 	void LoadNewResourceType() {
@@ -58,7 +59,7 @@ private:
 	void InitializeResourceManager() {
 		constexpr ResType resourceType = Type::value;
 		if (appContext.assetManagers.contains(resourceType)) throw std::runtime_error("Cannot have multiple asset managers handling the same asset type!");
-		appContext.assetManagers[resourceType] = std::make_unique<AssetManager<resourceType, ID>>();
+		appContext.assetManagers[resourceType] = AssetManager(resourceType, typeid(ID));
 	}
 
 	void TerminateApplication();
@@ -66,5 +67,4 @@ private:
 	AppContext appContext;
 	SceneManager sceneManager = SceneManager(&appContext);
 	ExitCode exitCode = ExitCode::Success;
-	bool hasTerminated = false;
 };

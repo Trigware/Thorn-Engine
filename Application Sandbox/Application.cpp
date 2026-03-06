@@ -1,8 +1,6 @@
 #include <Thorn.h>
 
-enum class TextureID {
-	TestTexture
-};
+enum class TextureID { Texture1, Texture2, Texture3 };
 
 enum class AudioID {
 	TestAudio
@@ -11,18 +9,13 @@ enum class AudioID {
 class StartScene : public IScene {
 	Actor sprite = Top<Sprite>();
 	void OnStart() override {
-		auto& comp = sprite.Get<Transform>();
-		std::cout << comp << std::endl;
 	}
 };
 
 int main(int argc, char* argv[]) {
-	AppConfig config("Application Title", 800, 600);
-	App app(config);
+	App app("Application", 800, 600);
 	app.CoreResources<
-		TextureRes, TextureID,
-		AudioRes, AudioID
+		TextureRes, TextureID
 	>();
-	app.Run<StartScene>();
-	return 0;
+	return app.GetExitCode();
 }

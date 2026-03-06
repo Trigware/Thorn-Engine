@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClCompile Include="src\Actor.cpp" />
     <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\Assets.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\Sprite.cpp" />
   </ItemGroup>

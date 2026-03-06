@@ -4,7 +4,7 @@
 #include "Assets.h"
 
 struct AppContext {
-	std::unordered_map<ResType, std::unique_ptr<IAssetManager>> assetManagers;
+	std::unordered_map<ResType, AssetManager> assetManagers;
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 };

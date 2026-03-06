@@ -73,12 +73,13 @@ public:
 	inline bool IsInScene() const { return sceneActors->contains(selfUUID); }
 	void DeleteAllSub();
 private:
-	Actor(SceneActors* actors, ActorUUID uuid) : sceneActors(actors), selfUUID(uuid) {}
-	ActorPtr GetActorMapRef(ActorUUID uuid) const { return (*sceneActors)[uuid]; }
 	ActorUUID selfUUID;
 	SceneActors* sceneActors = nullptr;
+	bool deletableOnDestruction = false;
+
 	ActorUUID MakeUUID() { return Random<ActorUUID>::Any(); }
+	Actor(SceneActors* actors, ActorUUID uuid) : sceneActors(actors), selfUUID(uuid) {}
+	ActorPtr GetActorMapRef(ActorUUID uuid) const { return (*sceneActors)[uuid]; }
 	void DeleteActor(bool manualDeletion);
 	void ThrowIfFreed() const;
-	bool deletableOnDestruction = false;
 };
