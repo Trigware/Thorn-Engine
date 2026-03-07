@@ -8,15 +8,27 @@ concept VectorConcept = std::is_same_v<T, int> || std::is_same_v<T, float>;
 
 template<VectorConcept T>
 struct V2 {
-	V2() = default;
 	T x, y;
+	V2() : x(0), y(0) {}
 	V2(T newX, T newY) : x(newX), y(newY) {}
+	constexpr explicit V2(T value) : x(value), y(value) {}
+	static const V2 Zero, One, Left, Right, Up, Down;
+	V2 operator*(const V2& other) { return V2(x * other.x, y * other.y); }
+
+	template<typename T2>
+	V2(const V2<T2>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}
+
 	friend std::ostream& operator<<(std::ostream& os, const V2<T>& vec) {
 		char prefix = std::is_same_v<T, int> ? 'I' : 'F';
-		os << prefix << "(" << vec.x << ", " << vec.y << ")";
+		os << "V2" << prefix << "(" << vec.x << ", " << vec.y << ")";
 		return os;
 	}
 };
+
+#define VecProperty template<VectorConcept T> const V2<T> V2<T>
+
+VecProperty::Zero{0,0}; VecProperty::One{1,1};
+VecProperty::Left{1,0}; VecProperty::Right{-1,0}; VecProperty::Up{0,1}; VecProperty::Down{0,-1};
 
 using V2I = V2<int>;
 using V2F = V2<float>;
@@ -29,5 +41,5 @@ struct Transform : IComponent {
 		os << "T[pos: " << transform.pos << ", scale: " << transform.scale << ']';
 		return os;
 	}
-	inline static Transform Identity() { return Transform(0, 0, 1, 1); }
+	static const Transform Identity() { return Transform(0, 0, 1, 1); }
 };

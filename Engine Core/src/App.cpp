@@ -10,10 +10,10 @@ void App::TerminateApplication() {
 	Mix_Quit();
 	IMG_Quit();
 	SDL_Quit();
+	applicationInitialized = false;
 }
 
 void App::Init() {
-	appConfig.mainPath = std::filesystem::current_path();
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
 		std::cout << "SDL Initialization ERROR: " << SDL_GetError() << '\n';
 		exitCode = ExitCode::SDLInitError;
@@ -21,7 +21,7 @@ void App::Init() {
 	}
 
 	appContext.window = SDL_CreateWindow(appConfig.initWindowTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		appConfig.initWidth, appConfig.initHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+		appConfig.initWidth, appConfig.initHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
 	if (appContext.window == nullptr) {
 		std::cout << "Window Creation ERROR: " << SDL_GetError() << '\n';
 		exitCode = ExitCode::WindowCreationError;
@@ -49,5 +49,6 @@ void App::Init() {
 	}
 
 	exitCode = ExitCode::Success;
+	applicationInitialized = true;
 	return;
 }

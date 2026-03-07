@@ -1,6 +1,6 @@
 #pragma once
 #include <type_traits>
-#include "AppContext.h"
+#include "Assets.h"
 #include "Actor.h"
 
 class IScene {
@@ -10,9 +10,15 @@ public:
 	virtual void OnDraw() {}
 	inline Actor Root() { return sceneRoot; }
 	template<ActorConcept T, typename... Args> Actor Top(Args&&... args) { return Root().Add<T>(args...); }
+	IScene(AppContext* appContext) {
+		sceneContext.appContext = appContext;
+		sceneRoot = Actor(&sceneContext);
+	}
 private:
-	SceneActors actors;
-	Actor sceneRoot = Actor(&actors);
+	friend class SceneManager;
+	void DrawScene();
+	SceneContext sceneContext;
+	Actor sceneRoot;
 };
 
 template<typename T>
@@ -23,7 +29,7 @@ public:
 	SceneManager(AppContext* context) : appContext(context) {};
 	template<SceneConcept T>
 	void SetStartScene() {
-		activeScene = std::make_unique<T>();
+		activeScene = std::make_unique<T>(appContext);
 		activeScene->OnStart();
 		ExecuteUpdateLoop();
 	}

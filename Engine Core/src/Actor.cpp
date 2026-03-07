@@ -2,7 +2,7 @@
 
 int Actor::GetSubCount() const {
 	ThrowIfFreed();
-	auto& selfData = GetActorMapRef(selfUUID);
+	auto& selfData = GetActorDataPtr(selfUUID);
 	return selfData->subActors.size();
 }
 
@@ -10,17 +10,17 @@ Actor Actor::operator[](int index) const {
 	ThrowIfFreed();
 	int numberOfChildren = GetSubCount();
 	if (index < 0 || index >= numberOfChildren) throw std::runtime_error("Attempted to access an invalid sub-actor!");
-	auto& selfData = GetActorMapRef(selfUUID);
+	auto& selfData = GetActorDataPtr(selfUUID);
 	ActorUUID subActorUUID = selfData->subActors[index];
-	Actor subActor(sceneActors, subActorUUID);
+	Actor subActor(sceneContext, subActorUUID);
 	return subActor;
 }
 
 Actor Actor::Super() const {
 	ThrowIfFreed();
 	if (!HasSuper()) throw std::runtime_error("Attempted to access a super-actor from scene root!");
-	ActorUUID superUUID = GetActorMapRef(selfUUID)->superActor;
-	Actor superActor(sceneActors, superUUID);
+	ActorUUID superUUID = GetActorDataPtr(selfUUID)->superActor;
+	Actor superActor(sceneContext, superUUID);
 	return superActor;
 }
 
@@ -28,17 +28,19 @@ void Actor::DeleteActor(bool manualDeletion) {
 	bool willDelete = (manualDeletion || deletableOnDestruction) && IsInScene();
 	if (!willDelete) return;
 	DeleteAllSub();
-	GetActorMapRef(selfUUID).reset();
-	sceneActors->erase(selfUUID);
+	GetActorDataPtr(selfUUID).reset();
+	sceneContext->sceneActors.erase(selfUUID);
 }
 
-Actor::Actor(SceneActors* actors) : sceneActors(actors), selfUUID(MakeUUID()) {
-	GetActorMapRef(selfUUID) = std::make_unique<Container>();
-	deletableOnDestruction = true;
+Actor::Actor(SceneContext* context) : sceneContext(context), selfUUID(MakeUUID()) {
+	ActorPtr actorPtr = GetActorDataPtr(selfUUID);
+	actorPtr = std::make_unique<Container>();
+	actorPtr->appContext = context->appContext;
+	deletableOnDestruction = false;
 }
 
 Actor::Actor(const Actor& copy) {
-	*this = Actor(copy.sceneActors, copy.selfUUID);
+	*this = Actor(copy.sceneContext, copy.selfUUID);
 	deletableOnDestruction = false;
 }
 

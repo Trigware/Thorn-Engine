@@ -6,6 +6,7 @@ void SceneManager::ExecuteUpdateLoop() {
 		HandleEvents();
 		SDL_SetRenderDrawColor(appContext->renderer, 0, 0, 0, 255);
 		SDL_RenderClear(appContext->renderer);
+		activeScene->DrawScene();
 		activeScene->OnDraw();
 		SDL_RenderPresent(appContext->renderer);
 	}
@@ -17,5 +18,12 @@ void SceneManager::HandleEvents() {
 		switch (currentEvent.type) {
 			case SDL_QUIT: windowRunning = false; break;
 		}
+	}
+}
+
+void IScene::DrawScene() {
+	for (auto it = sceneContext.sceneActors.begin(); it != sceneContext.sceneActors.end(); it++) {
+		std::unique_ptr<IActorType>& currentActor = it->second;
+		currentActor->OnDraw();
 	}
 }

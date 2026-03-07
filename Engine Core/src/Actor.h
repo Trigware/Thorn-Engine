@@ -8,9 +8,11 @@
 #include "Random.h"
 #include "Component.h"
 #include "Transform.h"
+#include "DrawData.h"
 
 using Component = std::variant<
-	Transform*
+	Transform*,
+	DrawData*
 >;
 
 using ActorUUID = uint64_t;
@@ -22,39 +24,44 @@ struct IActorType {
 	std::vector<ActorUUID> subActors;
 	ActorUUID superActor = 0;
 	bool hasSuperActor = false;
+	AppContext* appContext = nullptr;
 	virtual inline ComponentMap GetComponents() { return {}; }
 };
 
 template<typename T>
 concept ActorConcept = std::is_base_of_v<IActorType, T> && !std::is_same_v<IActorType, T>;
 
-struct Container : public IActorType {};
+struct Container : public IActorType {
+};
 
-using SceneActors = std::unordered_map<ActorUUID, std::unique_ptr<IActorType>>;
+struct SceneContext {
+	AppContext* appContext;
+	std::unordered_map<ActorUUID, std::unique_ptr<IActorType>> sceneActors;
+};
 
 class Actor {
 public:
-	Actor(SceneActors* actors);
-	Actor() = delete;
 	Actor(const Actor& copy);
 	~Actor();
-	ActorUUID GetUUID() const { return selfUUID; }
+	constexpr ActorUUID GetUUID() { return selfUUID; }
 	using ActorPtr = std::unique_ptr<IActorType>&;
 	template<ActorConcept T, typename... Args> Actor Add(Args&&... args) {
 		ActorUUID subActorUUID = MakeUUID();
-		ActorPtr subActorData = GetActorMapRef(subActorUUID);
-		subActorData = std::make_unique<T>(args...);
+		ActorPtr subActorData = GetActorDataPtr(subActorUUID);
+		if constexpr (std::same_as<T, Container>) subActorData = std::make_unique<T>(args...);
+		else subActorData = std::make_unique<T>(sceneContext->appContext, args...);
+
 		subActorData->superActor = selfUUID;
 		subActorData->hasSuperActor = true;
 
-		ActorPtr selfData = GetActorMapRef(selfUUID);
+		ActorPtr selfData = GetActorDataPtr(selfUUID);
 		selfData->subActors.push_back(subActorUUID);
-		Actor subActorHandle(sceneActors, subActorUUID);
+		Actor subActorHandle(sceneContext, subActorUUID);
 		subActorHandle.deletableOnDestruction = true;
 		return subActorHandle;
 	}
 	template<IsComponent T> T& Get() {
-		ActorPtr actorData = GetActorMapRef(selfUUID);
+		ActorPtr actorData = GetActorDataPtr(selfUUID);
 		ComponentMap components = actorData->GetComponents();
 		std::type_index componentType = typeid(T);
 		if (!components.contains(componentType))
@@ -67,19 +74,23 @@ public:
 	}
 	int GetSubCount() const;
 	Actor operator[](int index) const;
-	inline bool HasSuper() const { return GetActorMapRef(selfUUID)->hasSuperActor; }
+	inline bool HasSuper() const { return GetActorDataPtr(selfUUID)->hasSuperActor; }
 	Actor Super() const;
 	inline void Delete();
-	inline bool IsInScene() const { return sceneActors->contains(selfUUID); }
+	inline bool IsInScene() const { return sceneContext->sceneActors.contains(selfUUID); }
 	void DeleteAllSub();
 private:
-	ActorUUID selfUUID;
-	SceneActors* sceneActors = nullptr;
+	friend class IScene;
+	Actor() {}
+	Actor(SceneContext* context);
+
+	ActorUUID selfUUID = 0;
+	SceneContext* sceneContext = nullptr;
 	bool deletableOnDestruction = false;
 
 	ActorUUID MakeUUID() { return Random<ActorUUID>::Any(); }
-	Actor(SceneActors* actors, ActorUUID uuid) : sceneActors(actors), selfUUID(uuid) {}
-	ActorPtr GetActorMapRef(ActorUUID uuid) const { return (*sceneActors)[uuid]; }
+	Actor(SceneContext* context, ActorUUID uuid) : sceneContext(context), selfUUID(uuid) {}
+	ActorPtr GetActorDataPtr(ActorUUID uuid) const { return sceneContext->sceneActors[uuid]; }
 	void DeleteActor(bool manualDeletion);
 	void ThrowIfFreed() const;
 };

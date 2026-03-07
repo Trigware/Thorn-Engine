@@ -141,9 +141,9 @@
   <ItemGroup>
     <ClInclude Include="src\Actor.h" />
     <ClInclude Include="src\App.h" />
-    <ClInclude Include="src\AppContext.h" />
     <ClInclude Include="src\Assets.h" />
     <ClInclude Include="src\Component.h" />
+    <ClInclude Include="src\DrawData.h" />
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\Sprite.h" />
