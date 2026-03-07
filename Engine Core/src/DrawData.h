@@ -5,13 +5,13 @@
 class DrawData : IComponent {
 public:
 	DrawData() = default;
-	DrawData(AppContext* context) : appContext(context) {}
+	DrawData(SceneContext* context) : sceneContext(context) {}
 	template<Enum T>
-	void ReplaceTexture(T identifier) { textureAsset = appContext->GetAsset<TextureRes>(identifier); }
+	void ReplaceTexture(T identifier) { textureAsset = sceneContext->appContext->GetAsset<TextureRes>(identifier); }
 	void RemoveTexture() { textureAsset.texture = nullptr; }
 	V2I tileIndex;
 private:
 	friend class Sprite;
 	Texture textureAsset;
-	AppContext* appContext = nullptr;
+	SceneContext* sceneContext = nullptr;
 };

@@ -24,9 +24,8 @@ Actor Actor::Super() const {
 	return superActor;
 }
 
-void Actor::DeleteActor(bool manualDeletion) {
-	bool willDelete = (manualDeletion || deletableOnDestruction) && IsInScene();
-	if (!willDelete) return;
+void Actor::Delete() {
+	ThrowIfFreed();
 	DeleteAllSub();
 	GetActorDataPtr(selfUUID).reset();
 	sceneContext->sceneActors.erase(selfUUID);
@@ -35,14 +34,10 @@ void Actor::DeleteActor(bool manualDeletion) {
 Actor::Actor(SceneContext* context) : sceneContext(context), selfUUID(MakeUUID()) {
 	ActorPtr actorPtr = GetActorDataPtr(selfUUID);
 	actorPtr = std::make_unique<Container>();
-	actorPtr->appContext = context->appContext;
-	deletableOnDestruction = false;
+	actorPtr->sceneContext = context;
 }
 
-Actor::Actor(const Actor& copy) {
-	*this = Actor(copy.sceneContext, copy.selfUUID);
-	deletableOnDestruction = false;
-}
+Actor::Actor(const Actor& copy) { *this = Actor(copy.sceneContext, copy.selfUUID); }
 
 void Actor::ThrowIfFreed() const {
 	if (IsInScene()) return;
@@ -56,6 +51,3 @@ void Actor::DeleteAllSub() {
 		subActor.Delete();
 	}
 }
-
-Actor::~Actor() { DeleteActor(false); }
-void Actor::Delete() { DeleteActor(true); }

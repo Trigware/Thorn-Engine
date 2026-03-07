@@ -45,6 +45,12 @@
     <ClInclude Include="src\DrawData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\AssetsParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SceneContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\App.cpp">
@@ -59,7 +65,7 @@
     <ClCompile Include="src\Sprite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Assets.cpp">
+    <ClCompile Include="src\AssetParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

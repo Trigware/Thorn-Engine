@@ -9,7 +9,8 @@ enum class AudioID {
 class StartScene : public IScene {
 	using IScene::IScene;
 	Actor container = Top<Container>();
-	void OnDraw() override {
+	void OnStart() override {
+
 	}
 };
 

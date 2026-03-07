@@ -6,10 +6,10 @@
 
 class Sprite : public IActorType {
 public:
-	Sprite(AppContext* context);
+	Sprite(SceneContext* context);
 	void OnDraw() override;
 	template<Enum T>
-	Sprite(AppContext* context, T identifier) { appContext = context; drawData = DrawData(context); drawData.ReplaceTexture(identifier); }
+	Sprite(SceneContext* context, T identifier) { sceneContext = context; drawData = DrawData(context); drawData.ReplaceTexture(identifier); }
 private:
 	Transform transform;
 	DrawData drawData;

@@ -142,10 +142,12 @@
     <ClInclude Include="src\Actor.h" />
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\Assets.h" />
+    <ClInclude Include="src\AssetsParser.h" />
     <ClInclude Include="src\Component.h" />
     <ClInclude Include="src\DrawData.h" />
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\Scene.h" />
+    <ClInclude Include="src\SceneContext.h" />
     <ClInclude Include="src\Sprite.h" />
     <ClInclude Include="src\Thorn.h" />
     <ClInclude Include="src\Transform.h" />
@@ -153,7 +155,7 @@
   <ItemGroup>
     <ClCompile Include="src\Actor.cpp" />
     <ClCompile Include="src\App.cpp" />
-    <ClCompile Include="src\Assets.cpp" />
+    <ClCompile Include="src\AssetParser.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\Sprite.cpp" />
   </ItemGroup>

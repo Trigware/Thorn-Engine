@@ -2,6 +2,7 @@
 #include <concepts>
 #include <typeindex>
 #include <string>
+#include "SceneContext.h"
 
 struct IComponent { virtual ~IComponent() = default; };
 

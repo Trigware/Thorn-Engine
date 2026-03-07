@@ -1,7 +1,7 @@
 #include "Sprite.h"
 
-Sprite::Sprite(AppContext* context) {
-	appContext = context;
+Sprite::Sprite(SceneContext* context) {
+	sceneContext = context;
 	drawData = DrawData(context);
 }
 
@@ -14,5 +14,5 @@ void Sprite::OnDraw() {
 	SDL_Rect screenRect = {transform.pos.x, transform.pos.y, displayedSize.x, displayedSize.y},
 		sourceRect = {drawData.tileIndex.x, drawData.tileIndex.y, tileSize.x, tileSize.y};
 
-	SDL_RenderCopy(appContext->renderer, drawData.textureAsset.texture, &sourceRect, &screenRect);
+	SDL_RenderCopy(sceneContext->appContext->renderer, drawData.textureAsset.texture, &sourceRect, &screenRect);
 }

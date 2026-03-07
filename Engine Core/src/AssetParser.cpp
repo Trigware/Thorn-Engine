@@ -1,4 +1,5 @@
 #include "Assets.h"
+#include "AssetsParser.h"
 #include "SDL_image.h"
 
 AssetManager::AssetManager(ResType res, std::type_index id, AppContext* context) : resource(res), identifierType(id), appContext(context) {
