@@ -14,6 +14,9 @@ struct V2 {
 	constexpr explicit V2(T value) : x(value), y(value) {}
 	static const V2 Zero, One, Left, Right, Up, Down;
 	V2 operator*(const V2& other) { return V2(x * other.x, y * other.y); }
+	V2 operator-(const V2& other) { return V2(x - other.x, y - other.y); }
+	V2 operator/(float scalar) { return V2(x / scalar, y / scalar); }
+	V2 operator-=(const V2& other) { x -= other.x; y -= other.y; return *this; }
 
 	template<typename T2>
 	V2(const V2<T2>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}

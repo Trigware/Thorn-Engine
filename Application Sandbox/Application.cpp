@@ -7,10 +7,9 @@ enum class AudioID {
 };
 
 class StartScene : public IScene {
-	using IScene::IScene;
-	Actor container = Top<Container>();
+	Actor clock = Top<Sprite>(TextureID::TimerClock);
 	void OnStart() override {
-
+		clock.Get<Transform>().pos = V2I(300);
 	}
 };
 

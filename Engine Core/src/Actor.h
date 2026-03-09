@@ -3,6 +3,8 @@
 #include <memory>
 #include <typeindex>
 #include <variant>
+#include <utility>
+#include <functional>
 #include "Random.h"
 #include "Component.h"
 #include "Transform.h"
@@ -26,29 +28,35 @@ struct IActorType {
 	virtual inline ComponentMap GetComponents() { return {}; }
 };
 
-template<typename T>
-concept ActorConcept = std::is_base_of_v<IActorType, T> && !std::is_same_v<IActorType, T>;
-
 struct Container : public IActorType {};
+
+using ActorPtr = std::unique_ptr<IActorType>&;
+
+class Actor;
+struct DeferredActor;
+
+using DeferredPtr = std::unique_ptr<DeferredActor>;
+
+struct DeferredActor {
+	ActorUUID deferredUUID;
+	Actor* parentHandlePtr;
+	std::function<void(DeferredPtr& deferredRef, SceneContext*)> constructionFunction;
+	DeferredActor(ActorUUID deferred, Actor* parent) : deferredUUID(deferred), parentHandlePtr(parent) {}
+	inline void Make(DeferredPtr& deferredRef, SceneContext* context) { constructionFunction(deferredRef, context); }
+};
 
 class Actor {
 public:
+	Actor() = delete;
 	Actor(const Actor& copy);
-	constexpr ActorUUID GetUUID() { return selfUUID; }
-	using ActorPtr = std::unique_ptr<IActorType>&;
+
 	template<ActorConcept T, typename... Args> Actor Add(Args&&... args) {
 		ActorUUID subActorUUID = MakeUUID();
-		ActorPtr subActorData = GetActorDataPtr(subActorUUID);
-		if constexpr (std::same_as<T, Container>) subActorData = std::make_unique<T>(args...);
-		else subActorData = std::make_unique<T>(sceneContext, args...);
-
-		subActorData->superActor = selfUUID;
-		subActorData->hasSuperActor = true;
-
-		ActorPtr selfData = GetActorDataPtr(selfUUID);
-		selfData->subActors.push_back(subActorUUID);
+		bool deferringInit = sceneContext->initailizingFieldActors;
 		Actor subActorHandle(sceneContext, subActorUUID);
-		return subActorHandle;
+
+		if (deferringInit) { AddDeferred<T>(subActorUUID, args...); return subActorHandle; }
+		AddNow<T>(subActorUUID, args...); return subActorHandle;
 	}
 	template<IsComponent T> T& Get() {
 		ActorPtr actorData = GetActorDataPtr(selfUUID);
@@ -62,6 +70,7 @@ public:
 		T* component = std::get<T*>(genericComponent);
 		return *component;
 	}
+
 	int GetSubCount() const;
 	Actor operator[](int index) const;
 	inline bool HasSuper() const { return GetActorDataPtr(selfUUID)->hasSuperActor; }
@@ -71,7 +80,7 @@ public:
 	void DeleteAllSub();
 private:
 	friend class IScene;
-	Actor() {}
+	friend struct DeferredActor;
 	Actor(SceneContext* context);
 
 	ActorUUID selfUUID = 0;
@@ -81,4 +90,27 @@ private:
 	Actor(SceneContext* context, ActorUUID uuid) : sceneContext(context), selfUUID(uuid) {}
 	ActorPtr GetActorDataPtr(ActorUUID uuid) const { return sceneContext->sceneActors[uuid]; }
 	void ThrowIfFreed() const;
+
+	constexpr ActorUUID GetUUID() { return selfUUID; }
+	template<ActorConcept T, typename... Args> void AddDeferred(ActorUUID subActorUUID, Args&&... args) {
+		DeferredPtr deferred = std::make_unique<DeferredActor>(subActorUUID, this);
+		deferred->constructionFunction = [&](DeferredPtr& deferredRef, SceneContext* context) {
+			ActorUUID deferredUUID = deferredRef->deferredUUID;
+			deferredRef->parentHandlePtr->sceneContext = context;
+			deferredRef->parentHandlePtr->AddNow<T>(deferredUUID, args...);
+		};
+
+		sceneContext->deferredActors.push_back(std::move(deferred));
+	}
+	template<ActorConcept T, typename... Args> void AddNow(ActorUUID subActorUUID, Args&&... args) {
+		ActorPtr subActorData = GetActorDataPtr(subActorUUID);
+		if constexpr (std::same_as<T, Container>) subActorData = std::make_unique<T>(args...);
+		else subActorData = std::make_unique<T>(sceneContext, args...);
+
+		subActorData->superActor = selfUUID;
+		subActorData->hasSuperActor = true;
+
+		ActorPtr selfData = GetActorDataPtr(selfUUID);
+		selfData->subActors.push_back(subActorUUID);
+	}
 };

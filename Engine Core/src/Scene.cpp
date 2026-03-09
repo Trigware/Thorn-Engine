@@ -27,3 +27,13 @@ void IScene::DrawScene() {
 		currentActor->OnDraw();
 	}
 }
+
+void IScene::Init(AppContext* appContext) {
+	sceneContext.initailizingFieldActors = false;
+	sceneContext.appContext = appContext;
+	for (int i = 0; i < sceneContext.deferredActors.size(); i++) {
+		DeferredPtr& deferred = sceneContext.deferredActors[i];
+		deferred->Make(deferred, &sceneContext);
+	}
+	sceneContext.deferredActors.clear();
+}

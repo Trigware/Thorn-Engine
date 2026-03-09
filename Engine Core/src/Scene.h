@@ -10,15 +10,12 @@ public:
 	virtual void OnDraw() {}
 	inline Actor Root() { return sceneRoot; }
 	template<ActorConcept T, typename... Args> Actor Top(Args&&... args) { return Root().Add<T>(args...); }
-	IScene(AppContext* appContext) {
-		sceneContext.appContext = appContext;
-		sceneRoot = Actor(&sceneContext);
-	}
 private:
 	friend class SceneManager;
 	void DrawScene();
+	void Init(AppContext* appContext);
 	SceneContext sceneContext;
-	Actor sceneRoot;
+	Actor sceneRoot = Actor(&sceneContext);
 };
 
 template<typename T>
@@ -29,7 +26,8 @@ public:
 	SceneManager(AppContext* context) : appContext(context) {};
 	template<SceneConcept T>
 	void SetStartScene() {
-		activeScene = std::make_unique<T>(appContext);
+		activeScene = std::make_unique<T>();
+		activeScene->Init(appContext);
 		activeScene->OnStart();
 		ExecuteUpdateLoop();
 	}
