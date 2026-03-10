@@ -2,7 +2,7 @@
 #include "Component.h"
 #include "Assets.h"
 
-class DrawData : IComponent {
+class DrawData : public IComponent {
 public:
 	DrawData() = default;
 	DrawData(SceneContext* context) : sceneContext(context) {}

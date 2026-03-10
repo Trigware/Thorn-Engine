@@ -39,7 +39,8 @@ using V2F = V2<float>;
 struct Transform : IComponent {
 	Transform() { *this = Identity(); }
 	V2F pos, scale;
-	Transform(float pX, float pY, float sX, float sY) : pos(V2F(pX, pY)), scale(V2F(sX, sY)) {}
+	Transform(float pX, float pY, float sX = 1, float sY = 1) : pos(V2F(pX, pY)), scale(V2F(sX, sY)) {}
+	Transform(V2F newPos, V2F newScale = V2F::One) : pos(newPos), scale(newScale) {}
 	friend std::ostream& operator<<(std::ostream& os, const Transform& transform) {
 		os << "T[pos: " << transform.pos << ", scale: " << transform.scale << ']';
 		return os;

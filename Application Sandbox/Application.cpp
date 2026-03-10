@@ -2,14 +2,10 @@
 
 enum class TextureID { TimerClock, GridTiles };
 
-enum class AudioID {
-	TestAudio
-};
-
 class StartScene : public IScene {
-	Actor clock = Top<Sprite>(TextureID::TimerClock);
+	Actor spr = Top<Empty>();
 	void OnStart() override {
-		clock.Get<Transform>().pos = V2I(300);
+		std::cout << spr.Has<DrawData>() << std::endl;
 	}
 };
 

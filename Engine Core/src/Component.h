@@ -2,9 +2,20 @@
 #include <concepts>
 #include <typeindex>
 #include <string>
+#include <unordered_map>
 #include "SceneContext.h"
 
-struct IComponent { virtual ~IComponent() = default; };
+struct IComponent {
+	virtual ~IComponent() = default;
+	virtual void OnDraw() {}
+};
 
-template<typename T>
-concept IsComponent = std::is_base_of_v<IComponent, T> && !std::is_same_v<IComponent, T>;
+using ComponentMap = std::unordered_map<std::type_index, std::unique_ptr<IComponent>>;
+
+struct IActorType {
+	virtual ~IActorType() = default;
+	virtual ComponentMap GetComponents() { return {}; }
+};
+
+template<typename T> concept ComponentConcept = std::is_base_of_v<IComponent, T> && !std::is_same_v<IComponent, T>;
+template<typename T> concept ActorTypeConcept = std::is_base_of_v<IActorType, T> && !std::is_same_v<IActorType, T>;

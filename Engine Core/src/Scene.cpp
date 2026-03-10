@@ -23,8 +23,8 @@ void SceneManager::HandleEvents() {
 
 void IScene::DrawScene() {
 	for (auto it = sceneContext.sceneActors.begin(); it != sceneContext.sceneActors.end(); it++) {
-		std::unique_ptr<IActorType>& currentActor = it->second;
-		currentActor->OnDraw();
+		ActorData& currentActor = it->second;
+		currentActor.OnDraw();
 	}
 }
 

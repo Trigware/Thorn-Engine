@@ -9,7 +9,7 @@ public:
 	virtual void OnStart() {}
 	virtual void OnDraw() {}
 	inline Actor Root() { return sceneRoot; }
-	template<ActorConcept T, typename... Args> Actor Top(Args&&... args) { return Root().Add<T>(args...); }
+	template<ActorTypeConcept T, typename... Args> Actor Top(Args&&... args) { return Root().Add<T>(args...); }
 private:
 	friend class SceneManager;
 	void DrawScene();
