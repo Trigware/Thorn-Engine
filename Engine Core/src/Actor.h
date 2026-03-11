@@ -55,6 +55,7 @@ class Actor {
 public:
 	Actor() = delete;
 	Actor(const Actor& copy);
+	Actor(SceneContext* context, ActorUUID uuid) : sceneContext(context), selfUUID(uuid) {}
 
 	template<ActorTypeConcept T, typename... Args> Actor Add(Args&&... args) {
 		ActorUUID subActorUUID = MakeUUID();
@@ -69,8 +70,8 @@ public:
 		std::type_index componentType = typeid(T);
 		if (!Has<T>()) throw std::runtime_error("Attempted to get a component which is not available for this actor!");
 
-		std::unique_ptr<IComponent>& genericComponent = actorData->components[componentType];
-		T* componentPtr = std::get<T*>(genericComponent);
+		std::unique_ptr<IComponent>& genericComponentPtr = actorData.components[componentType];
+		T* componentPtr = dynamic_cast<T*>(genericComponentPtr.get());
 		return *componentPtr;
 	}
 	template<ComponentConcept T, typename... Args> Actor& Bind(Args&&... args) {
@@ -81,7 +82,14 @@ public:
 		if (deferringInit) { HandleBindingDeferred<T>(false, args...); return *this; }
 
 		std::type_index componentType = typeid(T);
-		actorData.components.emplace(componentType, std::make_unique<T>(args...));
+		constexpr bool hasSceneContext = std::is_constructible_v<T, SceneContext*, Args...>;
+
+		std::unique_ptr<T> componentPtr;
+		if constexpr (hasSceneContext) componentPtr = std::make_unique<T>(sceneContext, args...);
+		else componentPtr = std::make_unique<T>(args...);
+		componentPtr->linkedActorUUID = selfUUID;
+
+		actorData.components.emplace(componentType, std::move(componentPtr));
 		return *this;
 	}
 	template<ComponentConcept T, ComponentConcept... Other> Actor& BindMore() {
@@ -115,13 +123,13 @@ public:
 private:
 	friend class IScene;
 	friend struct DeferredActor;
+	friend class IComponent;
 	Actor(SceneContext* context);
 
 	ActorUUID selfUUID = 0;
 	SceneContext* sceneContext = nullptr;
 
 	ActorUUID MakeUUID() { return Random<ActorUUID>::Any(); }
-	Actor(SceneContext* context, ActorUUID uuid) : sceneContext(context), selfUUID(uuid) {}
 	ActorData& GetActorDataRef(ActorUUID uuid) const { return sceneContext->sceneActors[uuid]; }
 	void ThrowIfFreed() const;
 

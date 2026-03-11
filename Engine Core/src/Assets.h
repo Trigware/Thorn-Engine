@@ -65,7 +65,7 @@ struct AppContext {
 	using ManagerPtr = std::unique_ptr<AssetManager>&;
 
 	template<Resource Res, Enum ID>
-	ConditionalAsset<Res> GetAsset(ID identifier) {
+	ConditionalAsset<Res>* GetAsset(ID identifier) {
 		ResType wantedResourceType = static_cast<ResType>(Res::value);
 		if (!assetManagers.contains(wantedResourceType))
 			throw std::runtime_error("Attempted to obtain an asset of a type which has no associated identification enum!");
@@ -78,9 +78,9 @@ struct AppContext {
 		if (!wantedManager->assets.contains(assetIndex))
 			throw std::runtime_error("Asset metadata for wanted type isn't synced up with the identification enum type!");
 
-		Asset rawAsset = wantedManager->assets[assetIndex];
-		ConditionalAsset<Res> actualAsset = std::get<ConditionalAsset<Res>>(rawAsset);
-		return actualAsset;
+		Asset& rawAsset = wantedManager->assets[assetIndex];
+		ConditionalAsset<Res>& actualAsset = std::get<ConditionalAsset<Res>>(rawAsset);
+		return &actualAsset;
 	}
 
 	std::unordered_map<ResType, std::unique_ptr<AssetManager>> assetManagers;

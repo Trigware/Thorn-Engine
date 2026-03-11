@@ -5,9 +5,13 @@
 #include <unordered_map>
 #include "SceneContext.h"
 
-struct IComponent {
+class IComponent {
+public:
 	virtual ~IComponent() = default;
 	virtual void OnDraw() {}
+protected:
+	friend class Actor;
+	ActorUUID linkedActorUUID = 0;
 };
 
 using ComponentMap = std::unordered_map<std::type_index, std::unique_ptr<IComponent>>;
