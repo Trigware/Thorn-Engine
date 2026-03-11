@@ -66,7 +66,7 @@ public:
 		AddNow<T>(subActorUUID, args...); return subActorHandle;
 	}
 	template<ComponentConcept T> T& Get() {
-		ActorData& actorData = GetActorDataRef(selfUUID);
+		ActorData& actorData = GetSelfDataRef();
 		std::type_index componentType = typeid(T);
 		if (!Has<T>()) throw std::runtime_error("Attempted to get a component which is not available for this actor!");
 
@@ -75,7 +75,7 @@ public:
 		return *componentPtr;
 	}
 	template<ComponentConcept T, typename... Args> Actor& Bind(Args&&... args) {
-		ActorData& actorData = GetActorDataRef(selfUUID);
+		ActorData& actorData = GetSelfDataRef();
 		if (Has<T>()) throw std::runtime_error("Attempted to bind a component of a type which has already been binded!");
 
 		bool deferringInit = sceneContext->initailizingFieldActors;
@@ -98,11 +98,11 @@ public:
 		return *this;
 	}
 	template<ComponentConcept... Args> bool Has() {
-		ActorData& actorData = GetActorDataRef(selfUUID);
+		ActorData& actorData = GetSelfDataRef();
 		return (actorData.components.contains(typeid(Args)) && ...);
 	}
 	template<ComponentConcept T, ComponentConcept... Other> Actor& Unbind() {
-		ActorData& actorData = GetActorDataRef(selfUUID);
+		ActorData& actorData = GetSelfDataRef();
 		std::type_index typeToBeRemoved = typeid(T);
 
 		bool deferringInit = sceneContext->initailizingFieldActors;
@@ -115,7 +115,7 @@ public:
 
 	int GetSubCount() const;
 	Actor operator[](int index) const;
-	inline bool HasSuper() const { return GetActorDataRef(selfUUID).hasSuperActor; }
+	inline bool HasSuper() const { return GetSelfDataRef().hasSuperActor; }
 	Actor Super() const;
 	void Delete();
 	inline bool IsInScene() const { return sceneContext->sceneActors.contains(selfUUID); }
@@ -130,7 +130,8 @@ private:
 	SceneContext* sceneContext = nullptr;
 
 	ActorUUID MakeUUID() { return Random<ActorUUID>::Any(); }
-	ActorData& GetActorDataRef(ActorUUID uuid) const { return sceneContext->sceneActors[uuid]; }
+	inline ActorData& GetActorDataRef(ActorUUID uuid) const { return sceneContext->sceneActors[uuid]; }
+	inline ActorData& GetSelfDataRef() const { return GetActorDataRef(selfUUID); }
 	void ThrowIfFreed() const;
 
 	constexpr ActorUUID GetUUID() { return selfUUID; }
@@ -156,6 +157,8 @@ private:
 	template<ActorTypeConcept T, typename... Args> void AddNow(ActorUUID subActorUUID, Args&&... args) {
 		ActorData& subActorData = GetActorDataRef(subActorUUID);
 		subActorData = ActorData(sceneContext);
+		Actor subActorHandle(sceneContext, subActorUUID);
+		T actorBuilder = T(subActorHandle, args...);
 
 		subActorData.superActor = selfUUID;
 		subActorData.hasSuperActor = true;

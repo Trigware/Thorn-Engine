@@ -3,8 +3,9 @@
 enum class TextureID { TimerClock, GridTiles };
 
 class StartScene : public IScene {
-	Actor spr = Top<Empty>().Bind<Transform>().Bind<DrawData>(TextureID::TimerClock);
+	Actor spr = Top<Sprite>(TextureID::TimerClock);
 	void OnDraw() override {
+		spr.Get<Transform>().pos.x++;
 	}
 };
 
