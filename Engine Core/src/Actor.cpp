@@ -1,5 +1,13 @@
 #include "Actor.h"
 
+void DeferredActor::Make(DeferredPtr& deferredPtr, SceneContext* context) {
+	constructionFunction(deferredPtr, context);
+	for (int i = 0; i < bindingFunctions.size(); i++) {
+		BindingFunction& bindFunc = bindingFunctions[i];
+		bindFunc.function(deferredPtr, bindFunc.isUnbinding);
+	}
+}
+
 int Actor::GetSubCount() const {
 	ThrowIfFreed();
 	return GetActorDataRef(selfUUID).subActors.size();

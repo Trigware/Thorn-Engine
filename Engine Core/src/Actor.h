@@ -33,12 +33,22 @@ using DeferredPtr = std::unique_ptr<DeferredActor>;
 
 struct Empty : public IActorType {};
 
+using BindFunctionType = std::function<void(DeferredPtr&, bool)>;
+
+struct BindingFunction {
+	BindFunctionType function;
+	bool isUnbinding = false;
+	BindingFunction(const BindFunctionType& bindFunc, bool unbinding) : function(bindFunc), isUnbinding(unbinding) {}
+	BindingFunction() = default;
+};
+
 struct DeferredActor {
 	ActorUUID deferredUUID;
 	Actor* parentHandlePtr;
-	std::function<void(DeferredPtr& deferredRef, SceneContext*)> constructionFunction;
+	std::function<void(DeferredPtr&, SceneContext*)> constructionFunction;
+	std::vector<BindingFunction> bindingFunctions;
 	DeferredActor(ActorUUID deferred, Actor* parent) : deferredUUID(deferred), parentHandlePtr(parent) {}
-	inline void Make(DeferredPtr& deferredRef, SceneContext* context) { constructionFunction(deferredRef, context); }
+	void Make(DeferredPtr& deferredRef, SceneContext* context);
 };
 
 class Actor {
@@ -67,11 +77,14 @@ public:
 		ActorData& actorData = GetActorDataRef(selfUUID);
 		if (Has<T>()) throw std::runtime_error("Attempted to bind a component of a type which has already been binded!");
 
+		bool deferringInit = sceneContext->initailizingFieldActors;
+		if (deferringInit) { HandleBindingDeferred<T>(false, args...); return *this; }
+
 		std::type_index componentType = typeid(T);
 		actorData.components.emplace(componentType, std::make_unique<T>(args...));
 		return *this;
 	}
-	template<ComponentConcept T, typename... Other> Actor& BindMore() {
+	template<ComponentConcept T, ComponentConcept... Other> Actor& BindMore() {
 		Bind<T>();
 		if constexpr (sizeof...(Other) > 0) return BindMore<Other...>();
 		return *this;
@@ -83,7 +96,11 @@ public:
 	template<ComponentConcept T, ComponentConcept... Other> Actor& Unbind() {
 		ActorData& actorData = GetActorDataRef(selfUUID);
 		std::type_index typeToBeRemoved = typeid(T);
-		if (Has<T>()) actorData.components.erase(typeToBeRemoved);
+
+		bool deferringInit = sceneContext->initailizingFieldActors;
+		if (deferringInit) HandleBindingDeferred<T>(true);
+		else if (Has<T>()) actorData.components.erase(typeToBeRemoved);
+
 		if constexpr (sizeof...(Other) > 0) return Unbind<Other...>();
 		return *this;
 	}
@@ -119,6 +136,15 @@ private:
 
 		sceneContext->deferredActors.push_back(std::move(deferred));
 	}
+
+	template<ComponentConcept T, typename... Args> void HandleBindingDeferred(bool isUnbinding, Args&&... args) {
+		DeferredPtr& deferred = GetLatestDeferred();
+		deferred->bindingFunctions.emplace_back([&](DeferredPtr& deferredRef, bool unbinding) {
+			if (unbinding) deferredRef->parentHandlePtr->Unbind<T>();
+			else deferredRef->parentHandlePtr->Bind<T>(args...);
+		}, isUnbinding);
+	}
+
 	template<ActorTypeConcept T, typename... Args> void AddNow(ActorUUID subActorUUID, Args&&... args) {
 		ActorData& subActorData = GetActorDataRef(subActorUUID);
 		subActorData = ActorData(sceneContext);
@@ -129,4 +155,5 @@ private:
 		ActorData& selfData = GetActorDataRef(selfUUID);
 		selfData.subActors.push_back(subActorUUID);
 	}
+	inline DeferredPtr& GetLatestDeferred() { return sceneContext->deferredActors[sceneContext->deferredActors.size() - 1]; }
 };

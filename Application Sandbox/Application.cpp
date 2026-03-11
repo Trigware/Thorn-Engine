@@ -3,7 +3,7 @@
 enum class TextureID { TimerClock, GridTiles };
 
 class StartScene : public IScene {
-	Actor spr = Top<Empty>();
+	Actor spr = Top<Empty>().Bind<DrawData>();
 	void OnStart() override {
 		std::cout << spr.Has<DrawData>() << std::endl;
 	}
