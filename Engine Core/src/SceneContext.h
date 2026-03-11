@@ -2,6 +2,8 @@
 #include <unordered_map>
 #include <memory>
 
+namespace ThornEngine {
+
 using ActorUUID = uint64_t;
 
 struct AppContext;
@@ -14,3 +16,5 @@ struct SceneContext {
 	std::vector<std::unique_ptr<DeferredActor>> deferredActors;
 	bool initailizingFieldActors = true;
 };
+
+}

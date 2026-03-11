@@ -2,6 +2,8 @@
 #include "AssetsParser.h"
 #include "SDL_image.h"
 
+namespace ThornEngine {
+
 AssetManager::AssetManager(ResType res, std::type_index id, AppContext* context) : resource(res), identifierType(id), appContext(context) {
 	AssetParser parser(*this);
 }
@@ -237,4 +239,6 @@ void AssetParser::AssignPropertyToTexture(MetadataProperty currentProperty, cons
 		throw std::runtime_error("The segmentSizes metadata property can only be a V4I!");
 	}
 	throw std::runtime_error("Texture asset only supports the 'tileSize' and 'segmentSizes' properties!");
+}
+
 }

@@ -1,5 +1,7 @@
 #include "Actor.h"
 
+namespace ThornEngine {
+
 void DeferredActor::Make(DeferredPtr& deferredPtr, SceneContext* context) {
 	constructionFunction(deferredPtr, context);
 	for (int i = 0; i < bindingFunctions.size(); i++) {
@@ -63,4 +65,6 @@ void ActorData::OnDraw() {
 		std::unique_ptr<IComponent>& currentComponent = it->second;
 		currentComponent->OnDraw();
 	}
+}
+
 }

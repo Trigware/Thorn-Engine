@@ -3,6 +3,8 @@
 #include "Assets.h"
 #include "Actor.h"
 
+namespace ThornEngine {
+
 class IScene {
 public:
 	virtual ~IScene() = default;
@@ -38,3 +40,5 @@ private:
 	AppContext* appContext = nullptr;
 	bool windowRunning = true;
 };
+
+}

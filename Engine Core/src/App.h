@@ -8,6 +8,8 @@
 #include "Assets.h"
 #include "Scene.h"
 
+namespace ThornEngine {
+
 enum class ExitCode {
 	Success,
 	SDLInitError,
@@ -69,3 +71,5 @@ private:
 	ExitCode exitCode = ExitCode::Success;
 	bool applicationInitialized = false;
 };
+
+}

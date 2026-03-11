@@ -3,6 +3,8 @@
 #include <iostream>
 #include "Component.h"
 
+namespace ThornEngine {
+
 template<typename T>
 concept VectorConcept = std::is_same_v<T, int> || std::is_same_v<T, float>;
 
@@ -47,3 +49,5 @@ struct Transform : IComponent {
 	}
 	static const Transform Identity() { return Transform(0, 0, 1, 1); }
 };
+
+}

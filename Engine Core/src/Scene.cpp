@@ -1,5 +1,7 @@
 #include "Scene.h"
 
+namespace ThornEngine {
+
 void SceneManager::ExecuteUpdateLoop() {
 	windowRunning = true;
 	while (windowRunning) {
@@ -36,4 +38,6 @@ void IScene::Init(AppContext* appContext) {
 		deferred->Make(deferred, &sceneContext);
 	}
 	sceneContext.deferredActors.clear();
+}
+
 }

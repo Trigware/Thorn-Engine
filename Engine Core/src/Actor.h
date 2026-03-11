@@ -5,11 +5,14 @@
 #include <variant>
 #include <utility>
 #include <functional>
+#include <unordered_set>
 #include "Random.h"
 #include "Component.h"
 #include "Transform.h"
 #include "SceneContext.h"
 #include "DrawData.h"
+
+namespace ThornEngine {
 
 class ActorData {
 public:
@@ -17,11 +20,11 @@ public:
 	ActorUUID superActor = 0;
 	bool hasSuperActor = false;
 	ComponentMap components;
+	std::unordered_set<std::type_index> nonRemovableComponents = {};
 
 	ActorData(SceneContext* context) : sceneContext(context) {}
 	ActorData() = default;
 	void OnDraw();
-
 private:
 	SceneContext* sceneContext = nullptr;
 };
@@ -82,13 +85,17 @@ public:
 		if (deferringInit) { HandleBindingDeferred<T>(false, args...); return *this; }
 
 		std::type_index componentType = typeid(T);
-		constexpr bool hasSceneContext = std::is_constructible_v<T, SceneContext*, Args...>;
+		constexpr bool hasSceneContext = std::is_constructible_v<T, SceneContext*, Args...>,
+			hasValidParameters = std::is_constructible_v<T, Args...>;
 
 		std::unique_ptr<T> componentPtr;
 		if constexpr (hasSceneContext) componentPtr = std::make_unique<T>(sceneContext, args...);
-		else componentPtr = std::make_unique<T>(args...);
-		componentPtr->linkedActorUUID = selfUUID;
+		else {
+			static_assert(hasValidParameters, "Attempted to bind a component to an actor, however none of wanted component's constructors match the given argument types!");
+			componentPtr = std::make_unique<T>(args...);
+		}
 
+		componentPtr->linkedActorUUID = selfUUID;
 		actorData.components.emplace(componentType, std::move(componentPtr));
 		return *this;
 	}
@@ -107,7 +114,11 @@ public:
 
 		bool deferringInit = sceneContext->initailizingFieldActors;
 		if (deferringInit) HandleBindingDeferred<T>(true);
-		else if (Has<T>()) actorData.components.erase(typeToBeRemoved);
+
+		bool hasComponent = Has<T>();
+		if (hasComponent) actorData.components.erase(typeToBeRemoved);
+		if (actorData.nonRemovableComponents.contains(typeToBeRemoved))
+			throw std::runtime_error("Attempted to unbind a component which is associated with the actor type that binded this actor!");
 
 		if constexpr (sizeof...(Other) > 0) return Unbind<Other...>();
 		return *this;
@@ -121,9 +132,9 @@ public:
 	inline bool IsInScene() const { return sceneContext->sceneActors.contains(selfUUID); }
 	void DeleteAllSub();
 private:
-	friend class IScene;
 	friend struct DeferredActor;
-	friend class IComponent;
+	friend class IScene; friend class IComponent; friend class DrawData;
+	friend class Sprite;
 	Actor(SceneContext* context);
 
 	ActorUUID selfUUID = 0;
@@ -157,8 +168,13 @@ private:
 	template<ActorTypeConcept T, typename... Args> void AddNow(ActorUUID subActorUUID, Args&&... args) {
 		ActorData& subActorData = GetActorDataRef(subActorUUID);
 		subActorData = ActorData(sceneContext);
-		Actor subActorHandle(sceneContext, subActorUUID);
-		T actorBuilder = T(subActorHandle, args...);
+
+		constexpr bool isEmptyActorType = std::is_same_v<T, Empty>, actorTypeConstructable = std::is_constructible_v<T, Actor, Args...> || isEmptyActorType && std::is_constructible_v<Empty, Args...>;
+		static_assert(actorTypeConstructable, "Attempted to create an actor based on an actor type, however none of wanted actor type's constructors matches given argument types!");
+		if constexpr (!isEmptyActorType) {
+			Actor subActorHandle(sceneContext, subActorUUID);
+			T actorBuilder = T(subActorHandle, args...);
+		}
 
 		subActorData.superActor = selfUUID;
 		subActorData.hasSuperActor = true;
@@ -168,3 +184,5 @@ private:
 	}
 	inline DeferredPtr& GetLatestDeferred() { return sceneContext->deferredActors[sceneContext->deferredActors.size() - 1]; }
 };
+
+}

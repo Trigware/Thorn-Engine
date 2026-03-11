@@ -1,10 +1,20 @@
 #pragma once
 #include "Component.h"
 
+namespace ThornEngine {
+
 struct Sprite : IActorType {
-	inline Sprite(Actor& owner) { owner.BindMore<Transform, DrawData>(); }
-	template<Enum T>
-	inline Sprite(Actor& owner, T identifier, V2F position = V2F::Zero, V2F scale = V2F::Zero) {
-		owner.Bind<Transform>(position, scale).Bind<DrawData>(identifier);
+	inline Sprite(Actor owner) : ownerActor(owner) {
+		SetNonRemovableComponents();
+		ownerActor.BindMore<Transform, DrawData>();
 	}
+	template<Enum T>
+	inline Sprite(Actor owner, T identifier, V2F position = V2F::Zero, V2F scale = V2F::One) : ownerActor(owner) {
+		SetNonRemovableComponents();
+		ownerActor.Bind<Transform>(position, scale).Bind<DrawData>(identifier);		
+	}
+	void SetNonRemovableComponents() { ownerActor.GetSelfDataRef().nonRemovableComponents = { typeid(Transform), typeid(DrawData) }; }
+	Actor ownerActor;
 };
+
+}

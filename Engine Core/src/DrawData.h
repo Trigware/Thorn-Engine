@@ -2,6 +2,8 @@
 #include "Component.h"
 #include "Assets.h"
 
+namespace ThornEngine {
+
 class DrawData : public IComponent {
 public:
 	DrawData() = default;
@@ -22,3 +24,5 @@ private:
 	Texture* textureAsset = nullptr;
 	SceneContext* sceneContext = nullptr;
 };
+
+}

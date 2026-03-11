@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <type_traits>
 
+namespace ThornEngine {
+
 template<typename T>
 concept Is32Bit = std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>;
 
@@ -26,3 +28,5 @@ private:
 	static inline std::random_device seedGenerator;
 	static inline MersenneTwister generationEngine = MersenneTwister(seedGenerator());
 };
+
+}

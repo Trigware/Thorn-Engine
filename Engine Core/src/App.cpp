@@ -3,6 +3,8 @@
 #include <SDL_image.h>
 #include <SDL_mixer.h>
 
+namespace ThornEngine {
+
 void App::TerminateApplication() {
 	SDL_DestroyWindow(appContext.window);
 	SDL_DestroyRenderer(appContext.renderer);
@@ -51,4 +53,6 @@ void App::Init() {
 	exitCode = ExitCode::Success;
 	applicationInitialized = true;
 	return;
+}
+
 }

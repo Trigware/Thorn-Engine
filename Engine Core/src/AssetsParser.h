@@ -1,6 +1,8 @@
 #pragma once
 #include "Assets.h"
 
+namespace ThornEngine {
+
 using V4I = std::array<int, 4>;
 
 using MetadataType = std::variant<
@@ -58,3 +60,5 @@ private:
 	std::string GetDefaultExtension();
 	std::string GetResourceDirectory();
 };
+
+}

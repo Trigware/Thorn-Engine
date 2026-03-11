@@ -11,6 +11,8 @@
 #include <array>
 #include "Transform.h"
 
+namespace ThornEngine {
+
 enum class ResType {
 	Texture,
 	Audio,
@@ -87,3 +89,5 @@ struct AppContext {
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 };
+
+}
