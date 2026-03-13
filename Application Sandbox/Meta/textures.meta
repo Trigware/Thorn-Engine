@@ -1,3 +1,4 @@
-0. [TimerClock.png]
-1. [GridTiles = TilesSpritesheet.png]
-	tileSize = 32
+1. [Asset123 = asset with spaces.png]
+	str = "Hello, world!";
+	vec = (32, 32)
+	int = 64

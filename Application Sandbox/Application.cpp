@@ -1,12 +1,7 @@
 #include <Thorn.h>
 
 enum class TextureID { TimerClock, GridTiles };
-
-class StartScene : public TH::IScene {
-	TH::Actor spr = Top<TH::Sprite>(TextureID::TimerClock);
-	void OnDraw() override {
-	}
-};
+class StartScene : public TH::IScene {};
 
 int main(int argc, char* argv[]) {
 	TH::App app("Application", 800, 600);
