@@ -1,4 +1,4 @@
-1. [Asset123 = asset with spaces.png]
-	str = "Hello, world!";
-	vec = (32, 32)
-	int = 64
+1. [Asset123(UP).png = test.png] // HEADER
+	str = "Hello, world!" // STRING PROPERTY
+	vec = (32, 32) // VECTOR PROPERTY
+	int = 64 // INTEGER PROPERTY
