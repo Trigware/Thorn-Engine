@@ -143,7 +143,7 @@ private:
 	void ParsePropertySection();
 	Token GetPreviousToken();
 	bool HandleCaptureState(char ch, SectionType sectionType);
-	bool ActivedComment(int index);
+	bool ActivatedComment();
 	inline void ThrowLexerError() { throw std::runtime_error("Encountered an unrecognized section of a metadata file during lexing!"); }
 };
 

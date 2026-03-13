@@ -96,28 +96,32 @@ bool AssetParser::HandleCaptureState(char ch, SectionType sectionType) {
 void AssetParser::ParseMetadata() {
 	for (curIdx = 0; curIdx < metadataContents.size(); curIdx++) {
 		char ch = metadataContents[curIdx];
-		SectionType charType = DetermineSectionType(ch);
-		bool nowActivedComment = ActivedComment(curIdx);
-		if (nowActivedComment) inComment = true;
 		if (ch == '\n') { lastNewLineIdx = curIdx; inComment = false; }
 		if (inComment) continue;
 
+		SectionType charType = DetermineSectionType(ch);
 		if (HandleCaptureState(ch, charType)) continue;
 		bool capturesNonActive = sectionCaptures == CaptureState::NotActive;
-		bool newSection = ch == '\n' || ch == ' ' && currentSection.type != SectionType::Symbol && capturesNonActive;
-		if (newSection) { StartNewSection(SectionType::Unknown); continue; }
+		bool newSectionByWhitespace = ch == '\n' || ch == ' ' && currentSection.type != SectionType::Symbol && capturesNonActive;
+		if (newSectionByWhitespace) { StartNewSection(SectionType::Unknown); continue; }
 
 		if (currentSection.str.empty()) currentSection.type = charType;
-		if (charType != currentSection.type && capturesNonActive) StartNewSection(charType);
+		bool newSectionByType = charType != currentSection.type && capturesNonActive, activatedCommentNow = ActivatedComment();
+		if (activatedCommentNow) {
+			inComment = true;
+			continue;
+		}
+		if (newSectionByType) StartNewSection(charType);
 		bool appendingToSection = ch != ' ' || !capturesNonActive;
 		if (appendingToSection) currentSection.str += ch;
 	}
 }
 
-bool AssetParser::ActivedComment(int index) {
-	if (index == 0) return false;
-	char prevCh = metadataContents[index - 1], ch = metadataContents[index];
-	return prevCh == '/' && ch == '/';
+bool AssetParser::ActivatedComment() {
+	int metadataSize = metadataContents.size();
+	if (curIdx + 1 >= metadataSize) return false;
+	char ch = metadataContents[curIdx], nextCh = metadataContents[curIdx + 1];
+	return ch == '/' && nextCh == '/';
 }
 
 SectionType AssetParser::DetermineSectionType(char ch) {
@@ -142,26 +146,31 @@ void AssetParser::StartNewSection(SectionType newType) {
 void AssetParser::ParseHeaderSection() {
 	Token prevToken = GetPreviousToken();
 	if (prevToken.identifier == IdentifierType::HeaderIdentifier) { AddToken(IdentifierType::HeaderName, currentSection.str); return; }
-	if (prevToken.identifier == IdentifierType::HeaderName && currentSection.str == "(") { sectionCaptures = CaptureState::HeaderTag; return; }
+	bool isInHeaderTag = (prevToken.identifier == IdentifierType::HeaderName || prevToken.identifier == IdentifierType::PathFileExtension) && currentSection.str == "(";
+	if (isInHeaderTag) { sectionCaptures = CaptureState::HeaderTag; return; }
+
 	if (!afterHeaderAssign && currentSection.str == "=") {
 		AddToken(IdentifierType::HeaderAssign, HeaderType::Path);
 		sectionCaptures = CaptureState::PathName;
 		afterHeaderAssign = true;
 		return;
 	}
+
 	bool beforeExtension = prevToken.identifier == IdentifierType::PathFileName || prevToken.identifier == IdentifierType::HeaderName;
 	if (prevSection.str == "." && beforeExtension) {
 		AddToken(IdentifierType::PathFileExtension, currentSection.str);
 		return;
 	}
+
 	if (currentSection.str == "]") {
 		inHeader = false;
 		AddToken(IdentifierType::HeaderClose);
 		return;
 	}
+
 	if (currentSection.str == "." && beforeExtension) return;
 
-	std::cout << "HEADER SECTION ERROR: " << currentSection.str << std::endl;
+	std::cout << "HEADER SECTION ERROR: " << currentSection.str << std::endl;;
 	ThrowLexerError();
 }
 
