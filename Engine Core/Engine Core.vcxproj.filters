@@ -51,6 +51,12 @@
     <ClInclude Include="src\Sprite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\AssetLexer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\AssetParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\App.cpp">
@@ -62,10 +68,13 @@
     <ClCompile Include="src\Actor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\AssetParser.cpp">
+    <ClCompile Include="src\AssetLexer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\DrawData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AssetParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

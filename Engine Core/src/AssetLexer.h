@@ -6,27 +6,6 @@
 
 namespace ThornEngine {
 
-using V4I = std::array<int, 4>;
-
-using MetadataType = std::variant<
-	std::monostate,
-	V2I,
-	V4I,
-	std::string,
-	int
->;
-
-enum class MetadataProperty {
-	TileSize,
-	SegmentSizes
-};
-
-struct ResourceMetadata {
-	std::string filePath;
-	std::unordered_map<MetadataProperty, MetadataType> properties;
-	int resourceIndex = -1;
-};
-
 enum class HeaderType {
 	Unknown,
 	Path
@@ -86,8 +65,10 @@ struct Token {
 		return os;
 	}
 	template<typename T>
-	inline std::string ValToStr() const {
-		const T& originValue = std::get<T>(value);
+	inline T GetVal() const { return std::get<T>(value); }
+	template<typename T>
+	std::string ValToStr() const {
+		const T& originValue = GetVal<T>();
 		if constexpr (std::is_same_v<T, std::string>) return "\"" + originValue + "\"";
 		else if constexpr (std::is_same_v<T, HeaderType>) {
 			std::string result = "HeaderType::";
@@ -117,16 +98,50 @@ struct Section {
 	inline int AsInt() { return std::stoi(str); }
 };
 
-class AssetParser {
+enum class ParseErrorType {
+	Unknown,
+	UnrecognizedHeaderSection,
+	UnrecognizedPropertySection,
+	InvalidHeaderType,
+	FileExtensionRedefinition,
+	PropertyAsGlobal,
+	UnrecognizedLiteral
+};
+
+struct ParseError {
+	std::string sectionMessage;
+	int rowNumber = -1, columnNumber;
+	ParseErrorType errorType = ParseErrorType::Unknown;
+	ParseError(const std::string& sectionText, ParseErrorType error, int row, int column) : sectionMessage(sectionText), errorType(error), rowNumber(row), columnNumber(column) {}
+	friend std::ostream& operator<<(std::ostream& os, const ParseError& error) {
+		std::string result = "Metadata Parse Error - ";
+		switch (error.errorType) {
+			case ParseErrorType::UnrecognizedHeaderSection: result += "unable to deduce a header section"; break;
+			case ParseErrorType::UnrecognizedPropertySection: result += "unable to deduce a property section"; break;
+			case ParseErrorType::InvalidHeaderType: result += "unable to get header-type-specific value from incompatible type"; break;
+			case ParseErrorType::FileExtensionRedefinition: result += "file extension can be defined at most once"; break;
+			case ParseErrorType::PropertyAsGlobal: result += "encountered property declared without header"; break;
+			case ParseErrorType::UnrecognizedLiteral: result += "attempted to assign literal of unknown type to property"; break;
+			default: result += "UNKNOWN ERROR"; break;
+		}
+		if (!error.sectionMessage.empty()) result += ": \"" + error.sectionMessage + "\"";
+		if (error.rowNumber > -1) result += " (row: " + std::to_string(error.rowNumber) + ", column: " + std::to_string(error.columnNumber) + ")";
+		os << result;
+		return os;
+	}
+};
+
+class AssetLexer {
 public:
-	AssetParser(AssetManager& manager);
+	AssetLexer(AssetManager& manager);
+	std::vector<Token> tokens;
+	std::vector<ParseError> parseErrors;
 private:
 	static std::unordered_map<std::string, PropertyType> assignmentTypes;
 	AssetManager& assetManagerRef;
 	std::string GetMetadataPath();
-	std::vector<Token> tokens;
 	std::string metadataContents = "";
-	int curIdx = 0, lastNewLineIdx = 0;
+	int curIdx = 0, lastNewLineIdx = 0, curLine = 1, curColumn = 0;
 	bool inHeader = false, afterHeaderAssign = false, inComment = false;
 	PropertyType propertyType = PropertyType::NoAssignment;
 	CaptureState sectionCaptures = CaptureState::NotActive;
@@ -144,7 +159,9 @@ private:
 	Token GetPreviousToken();
 	bool HandleCaptureState(char ch, SectionType sectionType);
 	bool ActivatedComment();
+	void PrintLexerErrors();
 	inline void ThrowLexerError() { throw std::runtime_error("Encountered an unrecognized section of a metadata file during lexing!"); }
+	inline void AddError(ParseErrorType error) { parseErrors.emplace_back(currentSection.str, error, curLine, curColumn); }
 };
 
 }
