@@ -105,7 +105,15 @@ enum class ParseErrorType {
 	InvalidHeaderType,
 	FileExtensionRedefinition,
 	PropertyAsGlobal,
-	UnrecognizedLiteral
+	UnrecognizedLiteral,
+	InvalidIntegerLiteral,
+	InvalidVectorLiteral,
+	InvalidTerminatingToken,
+	IncorrectPropertyPlacement,
+	InvalidPropertyKind,
+	UnsupportedProperty,
+	AssetIdentifierRedefinition,
+	InvalidPropertyType
 };
 
 struct ParseError {
@@ -122,6 +130,14 @@ struct ParseError {
 			case ParseErrorType::FileExtensionRedefinition: result += "file extension can be defined at most once"; break;
 			case ParseErrorType::PropertyAsGlobal: result += "encountered property declared without header"; break;
 			case ParseErrorType::UnrecognizedLiteral: result += "attempted to assign literal of unknown type to property"; break;
+			case ParseErrorType::InvalidIntegerLiteral: result += "unable to parse an integer literal as a part of vector"; break;
+			case ParseErrorType::InvalidVectorLiteral: result += "all vector literals must be exactly 2 or 4 elements long"; break;
+			case ParseErrorType::InvalidTerminatingToken: result += "metadata file must end with a full header or a full property"; break;
+			case ParseErrorType::IncorrectPropertyPlacement: result += "property name was placed incorrectly"; break;
+			case ParseErrorType::InvalidPropertyKind: result += "encountered a property which isn't associated with any behavior"; break;
+			case ParseErrorType::UnsupportedProperty: result += "encountered a property which is unsupported on the wanted asset type"; break;
+			case ParseErrorType::AssetIdentifierRedefinition: result += "the same asset identifier can be defined once per asset type"; break;
+			case ParseErrorType::InvalidPropertyType: result += "wanted to assign a type of value which isn't supported for properties of kind"; break;
 			default: result += "UNKNOWN ERROR"; break;
 		}
 		if (!error.sectionMessage.empty()) result += ": \"" + error.sectionMessage + "\"";
@@ -136,10 +152,9 @@ public:
 	AssetLexer(AssetManager& manager);
 	std::vector<Token> tokens;
 	std::vector<ParseError> parseErrors;
+	AssetManager& assetManagerRef;
 private:
 	static std::unordered_map<std::string, PropertyType> assignmentTypes;
-	AssetManager& assetManagerRef;
-	std::string GetMetadataPath();
 	std::string metadataContents = "";
 	int curIdx = 0, lastNewLineIdx = 0, curLine = 1, curColumn = 0;
 	bool inHeader = false, afterHeaderAssign = false, inComment = false;
@@ -148,9 +163,6 @@ private:
 	Section currentSection, prevSection;
 	void ParseMetadata();
 	SectionType DetermineSectionType(char ch);
-	inline bool IsNumber(char ch) { return ch >= '0' && ch <= '9'; }
-	inline bool IsLetter(char ch) { return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z'; }
-	inline bool IsSymbol(char ch) { return !IsNumber(ch) && !IsLetter(ch); }
 	void StartNewSection(SectionType newType);
 	inline void AddToken(IdentifierType id, TokenValue val = std::monostate()) { tokens.emplace_back(id, val); }
 	void PrintTokens();
@@ -160,6 +172,7 @@ private:
 	bool HandleCaptureState(char ch, SectionType sectionType);
 	bool ActivatedComment();
 	void PrintLexerErrors();
+	bool PropertyPlacedCorrectly();
 	inline void ThrowLexerError() { throw std::runtime_error("Encountered an unrecognized section of a metadata file during lexing!"); }
 	inline void AddError(ParseErrorType error) { parseErrors.emplace_back(currentSection.str, error, curLine, curColumn); }
 };

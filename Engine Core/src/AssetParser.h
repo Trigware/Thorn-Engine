@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_map>
+#include <unordered_set>
 #include "AssetLexer.h"
 
 namespace ThornEngine {
@@ -21,10 +23,17 @@ using PropertyValue = std::variant<
 	std::string
 >;
 
+enum class PropertyKind {
+	Unknown,
+	TileSize,
+	SegmentSizes
+};
+
 struct AssetProperty {
-	std::string name;
+	std::string name = "";
+	PropertyKind kind = PropertyKind::Unknown;
 	PropertyValue value;
-	PropertyType type;
+	PropertyType type = PropertyType::NoAssignment;
 };
 
 struct AssetData {
@@ -39,6 +48,8 @@ class AssetParser {
 public:
 	AssetParser(AssetLexer& lexer);
 private:
+	static std::unordered_map<std::string, PropertyKind> propertyNameKindMap;
+	static std::unordered_map<ResType, std::unordered_set<PropertyKind>> supportedProperties;
 	AssetLexer& assetLexerRef;
 	AssetData latestAsset;
 	AssetProperty latestProperty;
@@ -52,6 +63,25 @@ private:
 	}
 	template<typename T>
 	inline T& SpecificData() { return std::get<T>(latestAsset.assetSpecificData); }
+	void ParseVectorValue(std::string vecAsStr);
+	void HandleAsset();
+	void HandleTexture();
+	template<typename TProp, typename T, typename... Other>
+	void SetPropertyRecurse(TProp& propertyField, AssetProperty& propertyData) {
+		if (std::holds_alternative<T>(propertyData.value)) {
+			propertyField = static_cast<TProp>(std::get<T>(propertyData.value));
+			return;
+		}
+		if constexpr (sizeof...(Other) > 0) {
+			SetPropertyRecurse<TProp, Other...>(propertyField, propertyData);
+			return;
+		}
+		AddError(ParseErrorType::InvalidPropertyType, propertyData.name);
+
+	}
+	template<typename TProp, typename... Other>
+	void SetProperty(TProp& propertyField, AssetProperty& propertyData) { SetPropertyRecurse<TProp, TProp, Other...>(propertyField, propertyData); }
+	void HandleAssetProperties(Texture& textureAsset);
 };
 
 }

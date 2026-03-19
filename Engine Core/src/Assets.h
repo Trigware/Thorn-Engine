@@ -1,6 +1,4 @@
 #pragma once
-#include <type_traits>
-#include <typeindex>
 #include <iostream>
 #include <variant>
 #include <vector>
@@ -9,26 +7,10 @@
 #include <string>
 #include <unordered_map>
 #include <array>
+#include "ResType.h"
 #include "Transform.h"
 
 namespace ThornEngine {
-
-enum class ResType {
-	Texture,
-	Audio,
-	Font,
-	Counter
-};
-
-using TextureRes = std::integral_constant<ResType, ResType::Texture>;
-using AudioRes = std::integral_constant<ResType, ResType::Audio>;
-using FontRes = std::integral_constant<ResType, ResType::Font>;
-
-template<typename T>
-concept Resource =
-	requires{T::value;} &&
-	std::is_same_v<T, std::integral_constant<ResType, T::value>> &&
-	static_cast<int>(T::value) >= 0 && T::value < ResType::Counter;
 
 template<typename T>
 concept Enum = std::is_enum_v<T>;

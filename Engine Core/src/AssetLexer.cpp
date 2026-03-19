@@ -2,6 +2,7 @@
 #include "AssetLexer.h"
 #include "SDL_image.h"
 #include "AssetParser.h"
+#include "Utils.h"
 
 namespace ThornEngine {
 
@@ -15,27 +16,14 @@ std::unordered_map<std::string, PropertyType> AssetLexer::assignmentTypes = {
 	{"=(", PropertyType::Vector}
 };
 
-std::string AssetLexer::GetMetadataPath() {
-	std::string metadataPath = "Meta/";
-	switch (assetManagerRef.resource) {
-		case ResType::Texture: metadataPath += "textures"; break;
-		case ResType::Audio: metadataPath += "audio"; break;
-		case ResType::Font: metadataPath += "fonts"; break;
-	}
-	return metadataPath + ".meta";
-}
-
 AssetLexer::AssetLexer(AssetManager& manager) : assetManagerRef(manager) {
-	std::string metadataPath = GetMetadataPath(), currentLine = "";
+	ResTypeData typeData(assetManagerRef.resource);
+	std::string metadataPath = typeData.metadataFile, currentLine = "";
 	std::ifstream metaFile(metadataPath);
 	while (std::getline(metaFile, currentLine)) metadataContents += currentLine + '\n';
 	ParseMetadata();
-	PrintTokens();
-
 	AssetParser parser(*this);
 	PrintLexerErrors();
-	if (parseErrors.size() == 0) return;
-	ThrowLexerError();
 }
 
 void AssetLexer::PrintTokens() {
@@ -50,7 +38,9 @@ void AssetLexer::PrintLexerErrors() {
 		ParseError error = parseErrors[i];
 		std::cout << error << std::endl;
 	}
-	if (parseErrors.size() > 0) std::cout << "\n";
+	if (parseErrors.size() == 0) return;
+	throw std::runtime_error("Asset metadata file contains parsing errors!");
+	std::cout << "\n";
 }
 
 Token AssetLexer::GetPreviousToken() {
@@ -141,8 +131,8 @@ bool AssetLexer::ActivatedComment() {
 }
 
 SectionType AssetLexer::DetermineSectionType(char ch) {
-	if (IsLetter(ch)) return SectionType::Identifier;
-	if (IsSymbol(ch)) return SectionType::Symbol;
+	if (StrUtils::IsLetter(ch)) return SectionType::Identifier;
+	if (StrUtils::IsSymbol(ch)) return SectionType::Symbol;
 	return currentSection.type == SectionType::Identifier ? SectionType::Identifier : SectionType::Number;
 }
 
@@ -192,7 +182,8 @@ void AssetLexer::ParseHeaderSection() {
 void AssetLexer::ParsePropertySection() {
 	Token prevToken = GetPreviousToken();
 	if (currentSection.type == SectionType::Identifier) {
-		if (prevToken.identifier == IdentifierType::PropertyAssign) { AddError(ParseErrorType::UnrecognizedLiteral); return; }
+		if (prevToken.identifier == (IdentifierType::PropertyAssign)) { AddError(ParseErrorType::UnrecognizedLiteral); return; }
+		if (!PropertyPlacedCorrectly()) { AddError(ParseErrorType::IncorrectPropertyPlacement); return; }
 		AddToken(IdentifierType::PropertyName, currentSection.str);
 		return;
 	}
@@ -214,6 +205,16 @@ void AssetLexer::ParsePropertySection() {
 	if (currentSection.type == SectionType::Number && propertyType == PropertyType::NoAssignment) return;
 	if (currentSection.str == ";" && prevToken.identifier == IdentifierType::PropertyValue) return;
 	AddError(ParseErrorType::UnrecognizedPropertySection);
+}
+
+bool AssetLexer::PropertyPlacedCorrectly() {
+	for (int i = curIdx - currentSection.str.size() - 1; i >= 0; i--) {
+		char ch = metadataContents[i];
+		if (ch == '\t' || ch == ';' || ch == ']') break;
+		if (ch == ' ') continue;
+		return false;
+	}
+	return true;
 }
 
 }

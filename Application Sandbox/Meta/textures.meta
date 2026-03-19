@@ -1,4 +1,1 @@
-0. [AssetName]
-	str = "Hello, world!"
-	vec = (32, 32)
-	int = 6a
+0. [TimerClock.png] tileSize = 32
