@@ -26,7 +26,8 @@ using PropertyValue = std::variant<
 enum class PropertyKind {
 	Unknown,
 	TileSize,
-	SegmentSizes
+	SegmentSizes,
+	StrTest
 };
 
 struct AssetProperty {

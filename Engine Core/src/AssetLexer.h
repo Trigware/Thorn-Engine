@@ -140,7 +140,7 @@ struct ParseError {
 			case ParseErrorType::InvalidPropertyType: result += "wanted to assign a type of value which isn't supported for properties of kind"; break;
 			default: result += "UNKNOWN ERROR"; break;
 		}
-		if (!error.sectionMessage.empty()) result += ": \"" + error.sectionMessage + "\"";
+		if (!error.sectionMessage.empty()) result += ": " + error.sectionMessage;
 		if (error.rowNumber > -1) result += " (row: " + std::to_string(error.rowNumber) + ", column: " + std::to_string(error.columnNumber) + ")";
 		os << result;
 		return os;
@@ -154,7 +154,6 @@ public:
 	std::vector<ParseError> parseErrors;
 	AssetManager& assetManagerRef;
 private:
-	static std::unordered_map<std::string, PropertyType> assignmentTypes;
 	std::string metadataContents = "";
 	int curIdx = 0, lastNewLineIdx = 0, curLine = 1, curColumn = 0;
 	bool inHeader = false, afterHeaderAssign = false, inComment = false;
@@ -175,6 +174,8 @@ private:
 	bool PropertyPlacedCorrectly();
 	inline void ThrowLexerError() { throw std::runtime_error("Encountered an unrecognized section of a metadata file during lexing!"); }
 	inline void AddError(ParseErrorType error) { parseErrors.emplace_back(currentSection.str, error, curLine, curColumn); }
+	bool CheckIfSettingProperty();
+	bool IsInsideString();
 };
 
 }

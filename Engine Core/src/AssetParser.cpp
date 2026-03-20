@@ -6,11 +6,12 @@ namespace ThornEngine {
 
 std::unordered_map<std::string, PropertyKind> AssetParser::propertyNameKindMap = {
 	{"tileSize", PropertyKind::TileSize},
-	{"segmentSizes", PropertyKind::SegmentSizes}
+	{"segmentSizes", PropertyKind::SegmentSizes},
+	{"strTest", PropertyKind::StrTest}
 };
 
 std::unordered_map<ResType, std::unordered_set<PropertyKind>> AssetParser::supportedProperties = {
-	{ResType::Texture, {PropertyKind::TileSize, PropertyKind::SegmentSizes}}
+	{ResType::Texture, {PropertyKind::TileSize, PropertyKind::SegmentSizes, PropertyKind::StrTest}}
 };
 
 AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
@@ -133,6 +134,11 @@ void AssetParser::HandleAssetProperties(Texture& textureAsset) {
 				V4I segmentSizes; SetProperty(segmentSizes, property);
 				textureAsset.upperLeftSegmentSize = V2I(segmentSizes[0], segmentSizes[1]);
 				textureAsset.bottomRightSegmentSize = V2I(segmentSizes[2], segmentSizes[3]); break;
+			case PropertyKind::StrTest:
+				std::string test;
+				SetProperty(test, property);
+				std::cout << test << std::endl;
+				break;
 		}
 	}
 

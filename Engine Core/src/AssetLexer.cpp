@@ -10,18 +10,13 @@ AssetManager::AssetManager(ResType res, std::type_index id, AppContext* context)
 	AssetLexer lexer(*this);
 }
 
-std::unordered_map<std::string, PropertyType> AssetLexer::assignmentTypes = {
-	{"=", PropertyType::Integer},
-	{"=\"", PropertyType::String},
-	{"=(", PropertyType::Vector}
-};
-
 AssetLexer::AssetLexer(AssetManager& manager) : assetManagerRef(manager) {
 	ResTypeData typeData(assetManagerRef.resource);
 	std::string metadataPath = typeData.metadataFile, currentLine = "";
 	std::ifstream metaFile(metadataPath);
 	while (std::getline(metaFile, currentLine)) metadataContents += currentLine + '\n';
 	ParseMetadata();
+	PrintTokens();
 	AssetParser parser(*this);
 	PrintLexerErrors();
 }
@@ -116,10 +111,17 @@ void AssetLexer::ParseMetadata() {
 			inComment = true;
 			continue;
 		}
+
 		if (newSectionByType) StartNewSection(charType);
-		bool appendingToSection = ch != ' ' || !capturesNonActive;
+		bool appendingToSection = ch != ' ' || !capturesNonActive || IsInsideString();
 		if (appendingToSection) currentSection.str += ch;
 	}
+}
+
+bool AssetLexer::IsInsideString() {
+	Token prevToken = GetPreviousToken();
+	return prevToken.identifier == IdentifierType::PropertyAssign && prevToken.GetVal<PropertyType>() == PropertyType::String ||
+		prevToken.identifier == IdentifierType::PropertyName && currentSection.str.starts_with("=\"");
 }
 
 bool AssetLexer::ActivatedComment() {
@@ -127,7 +129,12 @@ bool AssetLexer::ActivatedComment() {
 	int metadataSize = metadataContents.size();
 	if (curIdx + 1 >= metadataSize) return false;
 	char ch = metadataContents[curIdx], nextCh = metadataContents[curIdx + 1];
-	return ch == '/' && nextCh == '/';
+	bool matchesCommentChars = ch == '/' && nextCh == '/';
+	if (!matchesCommentChars) return false;
+
+	bool insideString = IsInsideString();
+	if (insideString) return false;
+	return true;
 }
 
 SectionType AssetLexer::DetermineSectionType(char ch) {
@@ -144,6 +151,7 @@ void AssetLexer::StartNewSection(SectionType newType) {
 	if (inHeader) ParseHeaderSection();
 	if (startedHeader) { inHeader = true; AddToken(IdentifierType::HeaderIdentifier, prevSection.AsInt()); afterHeaderAssign = false; }
 
+	if (sectionCaptures != CaptureState::NotActive) return;
 	prevSection = currentSection;
 	currentSection.str = "";
 	currentSection.type = newType;
@@ -188,12 +196,7 @@ void AssetLexer::ParsePropertySection() {
 		return;
 	}
 
-	if (assignmentTypes.contains(currentSection.str)) {
-		propertyType = assignmentTypes[currentSection.str];
-		if (propertyType != PropertyType::Integer) sectionCaptures = CaptureState::PropertyValue;
-		AddToken(IdentifierType::PropertyAssign, propertyType);
-		return;
-	}
+	if (CheckIfSettingProperty()) return;
 
 	if (propertyType == PropertyType::Integer) {
 		AddToken(IdentifierType::PropertyValue, currentSection.str);
@@ -214,6 +217,29 @@ bool AssetLexer::PropertyPlacedCorrectly() {
 		if (ch == ' ') continue;
 		return false;
 	}
+	return true;
+}
+
+bool AssetLexer::CheckIfSettingProperty() {
+	PropertyType prevType = propertyType;
+	if (currentSection.str == "=") propertyType = PropertyType::Integer;
+	if (currentSection.str == "=(") propertyType = PropertyType::Vector;
+
+	bool startsStringLiteral = currentSection.str.starts_with("=\""),
+		lastChStringTerminator = startsStringLiteral && currentSection.str.ends_with("\"") && currentSection.str.size() > 2;
+	if (startsStringLiteral) {
+		propertyType = PropertyType::String;
+		currentSection.str = currentSection.str.substr(2);
+		if (lastChStringTerminator) currentSection.str = currentSection.str.substr(0, currentSection.str.size() - 1);
+	}
+
+	bool activateCapture = propertyType != PropertyType::NoAssignment && propertyType != PropertyType::Integer;
+	if (activateCapture) { sectionCaptures = CaptureState::PropertyValue; }
+
+	bool propTypeChanged = propertyType != prevType;
+	if (!propTypeChanged) return false;
+	AddToken(IdentifierType::PropertyAssign, propertyType);
+	if (lastChStringTerminator) AddToken(IdentifierType::PropertyValue, currentSection.str);
 	return true;
 }
 
