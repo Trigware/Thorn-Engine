@@ -156,7 +156,7 @@ public:
 private:
 	std::string metadataContents = "";
 	int curIdx = 0, lastNewLineIdx = 0, curLine = 1, curColumn = 0;
-	bool inHeader = false, afterHeaderAssign = false, inComment = false;
+	bool inHeader = false, afterHeaderAssign = false, inComment = false, quotedAssetPath = false;
 	PropertyType propertyType = PropertyType::NoAssignment;
 	CaptureState sectionCaptures = CaptureState::NotActive;
 	Section currentSection, prevSection;
@@ -176,6 +176,9 @@ private:
 	inline void AddError(ParseErrorType error) { parseErrors.emplace_back(currentSection.str, error, curLine, curColumn); }
 	bool CheckIfSettingProperty();
 	bool IsInsideString();
+	void SetCapture(CaptureState capture, bool resetSection = true) { sectionCaptures = capture; if (resetSection) currentSection.str = ""; }
+	inline void CloseHeader() { inHeader = false; AddToken(IdentifierType::HeaderClose); }
+	void ParseHeaderAssign();
 };
 
 }

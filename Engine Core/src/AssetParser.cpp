@@ -6,12 +6,11 @@ namespace ThornEngine {
 
 std::unordered_map<std::string, PropertyKind> AssetParser::propertyNameKindMap = {
 	{"tileSize", PropertyKind::TileSize},
-	{"segmentSizes", PropertyKind::SegmentSizes},
-	{"strTest", PropertyKind::StrTest}
+	{"segmentSizes", PropertyKind::SegmentSizes}
 };
 
 std::unordered_map<ResType, std::unordered_set<PropertyKind>> AssetParser::supportedProperties = {
-	{ResType::Texture, {PropertyKind::TileSize, PropertyKind::SegmentSizes, PropertyKind::StrTest}}
+	{ResType::Texture, {PropertyKind::TileSize, PropertyKind::SegmentSizes}}
 };
 
 AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
@@ -106,6 +105,7 @@ void AssetParser::HandleAsset() {
 }
 
 void AssetParser::HandleTexture() {
+	ErrorIfInvalidHeader<FileAsset>();
 	FileAsset& fileAsset = std::get<FileAsset>(latestAsset.assetSpecificData);
 	ResTypeData typeData(ResType::Texture);
 	std::string assetPath = typeData.assetDir;
@@ -114,7 +114,11 @@ void AssetParser::HandleTexture() {
 
 	Texture textureAsset;
 	AssetManager& assetManager = assetLexerRef.assetManagerRef;
+	std::cout << assetPath << std::endl;
 	textureAsset.texture = IMG_LoadTexture(assetManager.appContext->renderer, assetPath.c_str());
+	if (textureAsset.texture == nullptr) throw std::runtime_error("Attempted to load a texture which doesn't exist!");
+	SDL_QueryTexture(textureAsset.texture, nullptr, nullptr, &textureAsset.tileSize.x, &textureAsset.tileSize.y);
+
 	HandleAssetProperties(textureAsset);
 	assetManager.assets[latestAsset.identifierNumber] = textureAsset;
 }
@@ -134,16 +138,14 @@ void AssetParser::HandleAssetProperties(Texture& textureAsset) {
 				V4I segmentSizes; SetProperty(segmentSizes, property);
 				textureAsset.upperLeftSegmentSize = V2I(segmentSizes[0], segmentSizes[1]);
 				textureAsset.bottomRightSegmentSize = V2I(segmentSizes[2], segmentSizes[3]); break;
-			case PropertyKind::StrTest:
-				std::string test;
-				SetProperty(test, property);
-				std::cout << test << std::endl;
-				break;
 		}
 	}
 
 	int idNumber = latestAsset.identifierNumber;
-	if (assetManager.assets.contains(idNumber)) { AddError(ParseErrorType::AssetIdentifierRedefinition, std::to_string(idNumber)); return; }
+	if (assetManager.assets.contains(idNumber)) {
+		AddError(ParseErrorType::AssetIdentifierRedefinition, std::to_string(idNumber));
+		return;
+	}
 	latestAsset = AssetData();
 }
 

@@ -26,8 +26,7 @@ using PropertyValue = std::variant<
 enum class PropertyKind {
 	Unknown,
 	TileSize,
-	SegmentSizes,
-	StrTest
+	SegmentSizes
 };
 
 struct AssetProperty {
@@ -57,7 +56,7 @@ private:
 	bool containsHeader = false;
 	inline void AddError(ParseErrorType type, std::string message = "") { assetLexerRef.parseErrors.emplace_back(message, type, -1, -1); }
 	template<typename T>
-	bool ErrorIfInvalidHeader(std::string type) {
+	bool ErrorIfInvalidHeader(std::string type = "") {
 		if (std::holds_alternative<std::monostate>(latestAsset.assetSpecificData)) latestAsset.assetSpecificData = T();
 		if (!std::holds_alternative<T>(latestAsset.assetSpecificData)) { AddError(ParseErrorType::InvalidHeaderType, "expected " + type); return true; }
 		return false;

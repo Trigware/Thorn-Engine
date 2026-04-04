@@ -16,7 +16,6 @@ AssetLexer::AssetLexer(AssetManager& manager) : assetManagerRef(manager) {
 	std::ifstream metaFile(metadataPath);
 	while (std::getline(metaFile, currentLine)) metadataContents += currentLine + '\n';
 	ParseMetadata();
-	PrintTokens();
 	AssetParser parser(*this);
 	PrintLexerErrors();
 }
@@ -73,11 +72,14 @@ bool AssetLexer::HandleCaptureState(char ch, SectionType sectionType) {
 			if (ch != ')') return false;
 			AddToken(IdentifierType::HeaderTag, currentSection.str);
 			break;
-		case CaptureState::PathName:
-			if (ch != '.') return false;
+		case CaptureState::PathName: {
+			bool regularPathNameChar = (ch != '.' && !quotedAssetPath) || (quotedAssetPath && ch != '"');
+			if (regularPathNameChar) return false;
 			AddToken(IdentifierType::PathFileName, currentSection.str);
-			newSectionStr = ".";
+			if (!quotedAssetPath) newSectionStr = ".";
+			if (quotedAssetPath) quotedAssetPath = false;
 			break;
+		}
 		case CaptureState::PropertyValue:
 			bool closingVec = propertyType == PropertyType::Vector && ch == ')', closingStr = propertyType == PropertyType::String && ch == '"';
 			if (!closingVec && !closingStr) return false;
@@ -138,7 +140,7 @@ bool AssetLexer::ActivatedComment() {
 }
 
 SectionType AssetLexer::DetermineSectionType(char ch) {
-	if (StrUtils::IsLetter(ch)) return SectionType::Identifier;
+	if (StrUtils::IsLetter(ch) || ch == '_') return SectionType::Identifier;
 	if (StrUtils::IsSymbol(ch)) return SectionType::Symbol;
 	return currentSection.type == SectionType::Identifier ? SectionType::Identifier : SectionType::Number;
 }
@@ -162,29 +164,54 @@ void AssetLexer::ParseHeaderSection() {
 	if (prevToken.identifier == IdentifierType::HeaderIdentifier) { AddToken(IdentifierType::HeaderName, currentSection.str); return; }
 	bool isInHeaderTag = (prevToken.identifier == IdentifierType::HeaderName || prevToken.identifier == IdentifierType::PathFileExtension)
 		&& currentSection.str == "(";
-	if (isInHeaderTag) { sectionCaptures = CaptureState::HeaderTag; return; }
 
-	if (!afterHeaderAssign && currentSection.str == "=") {
-		AddToken(IdentifierType::HeaderAssign, HeaderType::Path);
-		sectionCaptures = CaptureState::PathName;
-		afterHeaderAssign = true;
+	if (isInHeaderTag) {
+		SetCapture(CaptureState::HeaderTag);
+		return;
+	}
+
+	if (!afterHeaderAssign && currentSection.str.starts_with("=")) {
+		ParseHeaderAssign();
 		return;
 	}
 
 	bool beforeExtension = prevToken.identifier == IdentifierType::PathFileName || prevToken.identifier == IdentifierType::HeaderName || prevToken.identifier == IdentifierType::HeaderTag;
-	if (prevSection.str == "." && beforeExtension) {
+	if (prevSection.str == "." && beforeExtension && !quotedAssetPath) {
 		AddToken(IdentifierType::PathFileExtension, currentSection.str);
 		return;
 	}
-
-	if (currentSection.str == "]") {
-		inHeader = false;
-		AddToken(IdentifierType::HeaderClose);
-		return;
-	}
+	
+	if (currentSection.str == "]" || currentSection.str.ends_with("\"]")) { CloseHeader(); return; }
 
 	if (currentSection.str == "." && beforeExtension) return;
 	AddError(ParseErrorType::UnrecognizedHeaderSection);
+}
+
+void AssetLexer::ParseHeaderAssign() {
+	currentSection.str = currentSection.str.substr(1);
+	bool endsWithDot = currentSection.str.ends_with("."), endsWithHeaderEnding = currentSection.str.ends_with("]");
+	quotedAssetPath = currentSection.str.starts_with("\"");
+	if (quotedAssetPath) currentSection.str = currentSection.str.substr(1);
+
+	const int quoteEndLength = 2;
+	int sectionLength = currentSection.str.size();
+	bool endsQuoted = currentSection.str.size() >= quoteEndLength && currentSection.str[sectionLength - quoteEndLength] == '"' && quotedAssetPath;
+	if (endsQuoted) {
+		quotedAssetPath = false;
+		currentSection.str = currentSection.str.substr(0, sectionLength - 1);
+	}
+
+	AddToken(IdentifierType::HeaderAssign, HeaderType::Path);
+	bool nameEndsNow = (endsWithDot || endsWithHeaderEnding) && !quotedAssetPath;
+	if (nameEndsNow) {
+		currentSection.str = currentSection.str.substr(0, currentSection.str.size() - 1);
+		AddToken(IdentifierType::PathFileName, currentSection.str);
+		currentSection.str = ".";
+		if (endsWithHeaderEnding) CloseHeader();
+	}
+	else SetCapture(CaptureState::PathName, false);
+
+	afterHeaderAssign = true;
 }
 
 void AssetLexer::ParsePropertySection() {
@@ -234,7 +261,7 @@ bool AssetLexer::CheckIfSettingProperty() {
 	}
 
 	bool activateCapture = propertyType != PropertyType::NoAssignment && propertyType != PropertyType::Integer;
-	if (activateCapture) { sectionCaptures = CaptureState::PropertyValue; }
+	if (activateCapture) { SetCapture(CaptureState::PropertyValue, false); }
 
 	bool propTypeChanged = propertyType != prevType;
 	if (!propTypeChanged) return false;
