@@ -20,7 +20,7 @@ public:
 	ActorUUID superActor = 0;
 	bool hasSuperActor = false;
 	ComponentMap components;
-	std::unordered_set<std::type_index> nonRemovableComponents = {};
+	ComponentSet nonRemovableComponents = {};
 
 	ActorData(SceneContext* context) : sceneContext(context) {}
 	ActorData() = default;
@@ -34,7 +34,9 @@ struct DeferredActor;
 
 using DeferredPtr = std::unique_ptr<DeferredActor>;
 
-struct Empty : public IActorType {};
+struct Empty : public IActorType {
+	ComponentSet GetSet() override { return {}; }
+};
 
 using BindFunctionType = std::function<void(DeferredPtr&, bool)>;
 
@@ -69,7 +71,7 @@ public:
 		AddNow<T>(subActorUUID, args...); return subActorHandle;
 	}
 	template<ComponentConcept T> T& Get() {
-		ActorData& actorData = GetSelfDataRef();
+		ActorData& actorData = GetData();
 		std::type_index componentType = typeid(T);
 		if (!Has<T>()) throw std::runtime_error("Attempted to get a component which is not available for this actor!");
 
@@ -78,13 +80,12 @@ public:
 		return *componentPtr;
 	}
 	template<ComponentConcept T, typename... Args> Actor& Bind(Args&&... args) {
-		ActorData& actorData = GetSelfDataRef();
+		ActorData& actorData = GetData();
 		if (Has<T>()) throw std::runtime_error("Attempted to bind a component of a type which has already been binded!");
 
 		bool deferringInit = sceneContext->initailizingFieldActors;
 		if (deferringInit) { HandleBindingDeferred<T>(false, args...); return *this; }
 
-		std::type_index componentType = typeid(T);
 		constexpr bool hasSceneContext = std::is_constructible_v<T, SceneContext*, Args...>,
 			hasValidParameters = std::is_constructible_v<T, Args...>;
 
@@ -96,6 +97,7 @@ public:
 		}
 
 		componentPtr->linkedActorUUID = selfUUID;
+		std::type_index componentType = typeid(T);
 		actorData.components.emplace(componentType, std::move(componentPtr));
 		return *this;
 	}
@@ -105,11 +107,11 @@ public:
 		return *this;
 	}
 	template<ComponentConcept... Args> bool Has() {
-		ActorData& actorData = GetSelfDataRef();
+		ActorData& actorData = GetData();
 		return (actorData.components.contains(typeid(Args)) && ...);
 	}
 	template<ComponentConcept T, ComponentConcept... Other> Actor& Unbind() {
-		ActorData& actorData = GetSelfDataRef();
+		ActorData& actorData = GetData();
 		std::type_index typeToBeRemoved = typeid(T);
 
 		bool deferringInit = sceneContext->initailizingFieldActors;
@@ -126,23 +128,23 @@ public:
 
 	int GetSubCount() const;
 	Actor operator[](int index) const;
-	inline bool HasSuper() const { return GetSelfDataRef().hasSuperActor; }
+	inline bool HasSuper() const { return GetData().hasSuperActor; }
 	Actor Super() const;
 	void Delete();
 	inline bool IsInScene() const { return sceneContext->sceneActors.contains(selfUUID); }
 	void DeleteAllSub();
 private:
 	friend struct DeferredActor;
-	friend class IScene; friend class IComponent; friend class DrawData;
-	friend class Sprite;
+	friend class IScene;
+	friend class IComponent;
 	Actor(SceneContext* context);
 
 	ActorUUID selfUUID = 0;
 	SceneContext* sceneContext = nullptr;
 
 	ActorUUID MakeUUID() { return Random<ActorUUID>::Any(); }
-	inline ActorData& GetActorDataRef(ActorUUID uuid) const { return sceneContext->sceneActors[uuid]; }
-	inline ActorData& GetSelfDataRef() const { return GetActorDataRef(selfUUID); }
+	inline ActorData& GetActorData(ActorUUID uuid) const { return sceneContext->sceneActors[uuid]; }
+	inline ActorData& GetData() const { return GetActorData(selfUUID); }
 	void ThrowIfFreed() const;
 
 	constexpr ActorUUID GetUUID() { return selfUUID; }
@@ -166,23 +168,26 @@ private:
 	}
 
 	template<ActorTypeConcept T, typename... Args> void AddNow(ActorUUID subActorUUID, Args&&... args) {
-		ActorData& subActorData = GetActorDataRef(subActorUUID);
+		ActorData& subActorData = GetActorData(subActorUUID);
 		subActorData = ActorData(sceneContext);
 
-		constexpr bool isEmptyActorType = std::is_same_v<T, Empty>, actorTypeConstructable = std::is_constructible_v<T, Actor, Args...> || isEmptyActorType && std::is_constructible_v<Empty, Args...>;
+		constexpr bool isEmptyActorType = std::is_same_v<T, Empty>, actorTypeConstructable = std::is_constructible_v<T, Actor, Args...> || isEmptyActorType && sizeof...(Args) == 0;
 		static_assert(actorTypeConstructable, "Attempted to create an actor based on an actor type, however none of wanted actor type's constructors matches given argument types!");
 		if constexpr (!isEmptyActorType) {
 			Actor subActorHandle(sceneContext, subActorUUID);
 			T actorBuilder = T(subActorHandle, args...);
+			subActorHandle.GetData().nonRemovableComponents = std::move(actorBuilder.GetSet());
 		}
 
 		subActorData.superActor = selfUUID;
 		subActorData.hasSuperActor = true;
 
-		ActorData& selfData = GetActorDataRef(selfUUID);
+		ActorData& selfData = GetActorData(selfUUID);
 		selfData.subActors.push_back(subActorUUID);
 	}
 	inline DeferredPtr& GetLatestDeferred() { return sceneContext->deferredActors[sceneContext->deferredActors.size() - 1]; }
 };
+
+inline Actor IComponent::GetOwner() { return Actor(sceneContext, linkedActorUUID); }
 
 }

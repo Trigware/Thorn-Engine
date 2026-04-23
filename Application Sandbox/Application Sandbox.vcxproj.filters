@@ -32,5 +32,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Meta\textures.meta" />
+    <None Include="Meta\actions.meta" />
   </ItemGroup>
 </Project>

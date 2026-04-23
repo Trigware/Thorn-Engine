@@ -54,7 +54,8 @@ private:
 	AssetData latestAsset;
 	AssetProperty latestProperty;
 	bool containsHeader = false;
-	inline void AddError(ParseErrorType type, std::string message = "") { assetLexerRef.parseErrors.emplace_back(message, type, -1, -1); }
+	int index = 0;
+	inline void AddError(ParseErrorType type, std::string message = "") { assetLexerRef.parseErrors.emplace_back(message, type, -1, -1, assetLexerRef.metadataPath); }
 	template<typename T>
 	bool ErrorIfInvalidHeader(std::string type = "") {
 		if (std::holds_alternative<std::monostate>(latestAsset.assetSpecificData)) latestAsset.assetSpecificData = T();
@@ -82,6 +83,11 @@ private:
 	template<typename TProp, typename... Other>
 	void SetProperty(TProp& propertyField, AssetProperty& propertyData) { SetPropertyRecurse<TProp, TProp, Other...>(propertyField, propertyData); }
 	void HandleAssetProperties(Texture& textureAsset);
+	inline Token GetToken(int index) { return assetLexerRef.tokens[index]; }
+	inline bool WasPrevToken(IdentifierType identifier) { return index > 0 && GetToken(index - 1).identifier == identifier; }
+	inline bool UninitAllowed() {
+		return assetLexerRef.headerType == HeaderType::Path;
+	}
 };
 
 }

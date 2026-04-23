@@ -5,6 +5,7 @@ namespace ThornEngine {
 ResTypeData::ResTypeData(ResType resType) {
 	switch (resType) {
 		case ResType::Texture: *this = ResTypeData("Textures", "png"); break;
+		case ResType::Action: *this = ResTypeData("Actions");
 	}
 }
 

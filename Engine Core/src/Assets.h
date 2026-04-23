@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <array>
 #include "ResType.h"
-#include "Transform.h"
+#include "Vector.h"
 
 namespace ThornEngine {
 
@@ -22,11 +22,13 @@ struct Texture {
 	bool isSegmented = false;
 };
 
-struct Audio {};
-struct Font {};
+struct Action {
+	Action() = default;
+};
 
 using Asset = std::variant<
-	Texture
+	Texture,
+	Action
 >;
 
 struct AppContext;
@@ -40,12 +42,12 @@ struct AssetManager {
 	std::type_index identifierType;
 };
 
+template<Resource Res>
+using ConditionalAsset =
+	std::conditional_t<std::is_same_v<Res, TextureRes>, Texture, Action
+>;
+
 struct AppContext {
-	template<Resource Res>
-	using ConditionalAsset =
-		std::conditional_t<std::is_same_v<Res, TextureRes>, Texture,
-		std::conditional_t<std::is_same_v<Res, AudioRes>, Audio, Font
-	>>;
 	using ManagerPtr = std::unique_ptr<AssetManager>&;
 
 	template<Resource Res, Enum ID>

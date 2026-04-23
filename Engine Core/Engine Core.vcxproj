@@ -147,6 +147,7 @@
     <ClInclude Include="src\AssetsParser.h" />
     <ClInclude Include="src\Component.h" />
     <ClInclude Include="src\DrawData.h" />
+    <ClInclude Include="src\InputManager.h" />
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\SceneContext.h" />
@@ -154,6 +155,7 @@
     <ClInclude Include="src\Thorn.h" />
     <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\Utils.h" />
+    <ClInclude Include="src\Vector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Actor.cpp" />

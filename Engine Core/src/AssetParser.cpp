@@ -1,6 +1,7 @@
 #include <SDL_image.h>
 #include "AssetParser.h"
 #include "Utils.h"
+#include "Vector.h"
 
 namespace ThornEngine {
 
@@ -15,11 +16,11 @@ std::unordered_map<ResType, std::unordered_set<PropertyKind>> AssetParser::suppo
 
 AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 	Token token;
-	for (int i = 0; i < assetLexerRef.tokens.size(); i++) {
-		token = assetLexerRef.tokens[i];
+	for (index = 0; index < assetLexerRef.tokens.size(); index++) {
+		token = GetToken(index);
 		switch (token.identifier) {
 			case IdentifierType::HeaderIdentifier:
-				if (i > 0) HandleAsset();
+				if (index > 0) HandleAsset();
 				latestAsset.identifierNumber = token.GetVal<int>();
 				break;
 			case IdentifierType::HeaderName: latestAsset.assetName = token.GetVal<std::string>(); break;
@@ -36,7 +37,12 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 				fileAsset.fileExtension = token.GetVal<std::string>();
 				break;
 			}
-			case IdentifierType::HeaderClose: containsHeader = true; break;
+			case IdentifierType::HeaderClose: {
+				if (WasPrevToken(IdentifierType::HeaderAssign)) AddError(ParseErrorType::IncompleteHeaderAssignment);
+				if (WasPrevToken(IdentifierType::HeaderName) && !UninitAllowed()) AddError(ParseErrorType::UninitializedResource);
+				containsHeader = true;
+				break;
+			}
 			case IdentifierType::PropertyName:
 				latestProperty.name = token.GetVal<std::string>();
 				if (!propertyNameKindMap.contains(latestProperty.name)) { AddError(ParseErrorType::InvalidPropertyKind, latestProperty.name); break; }
@@ -114,7 +120,6 @@ void AssetParser::HandleTexture() {
 
 	Texture textureAsset;
 	AssetManager& assetManager = assetLexerRef.assetManagerRef;
-	std::cout << assetPath << std::endl;
 	textureAsset.texture = IMG_LoadTexture(assetManager.appContext->renderer, assetPath.c_str());
 	if (textureAsset.texture == nullptr) throw std::runtime_error("Attempted to load a texture which doesn't exist!");
 	SDL_QueryTexture(textureAsset.texture, nullptr, nullptr, &textureAsset.tileSize.x, &textureAsset.tileSize.y);

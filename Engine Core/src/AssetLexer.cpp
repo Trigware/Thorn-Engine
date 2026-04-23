@@ -12,12 +12,24 @@ AssetManager::AssetManager(ResType res, std::type_index id, AppContext* context)
 
 AssetLexer::AssetLexer(AssetManager& manager) : assetManagerRef(manager) {
 	ResTypeData typeData(assetManagerRef.resource);
-	std::string metadataPath = typeData.metadataFile, currentLine = "";
+	metadataPath = typeData.metadataFile;
+	std::string currentLine = "";
 	std::ifstream metaFile(metadataPath);
 	while (std::getline(metaFile, currentLine)) metadataContents += currentLine + '\n';
+	
+	headerType = GetHeaderType();
 	ParseMetadata();
+	PrintTokens();
 	AssetParser parser(*this);
 	PrintLexerErrors();
+}
+
+HeaderType AssetLexer::GetHeaderType() {
+	switch (assetManagerRef.resource) {
+		case ResType::Texture: return HeaderType::Path;
+		case ResType::Action: return HeaderType::Action;
+	}
+	return HeaderType::Unknown;
 }
 
 void AssetLexer::PrintTokens() {
@@ -25,6 +37,7 @@ void AssetLexer::PrintTokens() {
 		Token token = tokens[i];
 		std::cout << token << std::endl;
 	}
+	std::cout << "-- TOKENIZATION OF '" << metadataPath << "' FINISHED --" << std::endl;
 }
 
 void AssetLexer::PrintLexerErrors() {
@@ -34,7 +47,6 @@ void AssetLexer::PrintLexerErrors() {
 	}
 	if (parseErrors.size() == 0) return;
 	throw std::runtime_error("Asset metadata file contains parsing errors!");
-	std::cout << "\n";
 }
 
 Token AssetLexer::GetPreviousToken() {
@@ -52,6 +64,9 @@ std::string Token::TokenAsStr() const {
 		case IdentifierType::HeaderAssign: typeAsStr = "HeaderAssign"; valueAsStr = ValToStr<HeaderType>(); break;
 		case IdentifierType::PathFileName: typeAsStr = "PathFileName"; valueAsStr = ValToStr<std::string>(); break;
 		case IdentifierType::PathFileExtension: typeAsStr = "PathFileExtension"; valueAsStr = ValToStr<std::string>(); break;
+		case IdentifierType::ActionKey: typeAsStr = "ActionKey"; valueAsStr = ValToStr<std::string>(); break;
+		case IdentifierType::ActionOR: typeAsStr = "ActionOR"; break;
+		case IdentifierType::ActionAND: typeAsStr = "ActionAND"; break;
 		case IdentifierType::HeaderClose: typeAsStr = "HeaderClose"; break;
 		case IdentifierType::PropertyName: typeAsStr = "PropertyName"; valueAsStr = ValToStr<std::string>(); break;
 		case IdentifierType::PropertyAssign: typeAsStr = "PropertyAssign"; valueAsStr = ValToStr<PropertyType>(); break;
@@ -66,6 +81,8 @@ std::string Token::TokenAsStr() const {
 
 bool AssetLexer::HandleCaptureState(char ch, SectionType sectionType) {
 	std::string newSectionStr = "";
+	CaptureState nextCapture = CaptureState::NotActive;
+
 	switch (sectionCaptures) {
 		case CaptureState::NotActive: return false;
 		case CaptureState::HeaderTag:
@@ -73,22 +90,38 @@ bool AssetLexer::HandleCaptureState(char ch, SectionType sectionType) {
 			AddToken(IdentifierType::HeaderTag, currentSection.str);
 			break;
 		case CaptureState::PathName: {
-			bool regularPathNameChar = (ch != '.' && !quotedAssetPath) || (quotedAssetPath && ch != '"');
+			bool regularPathNameChar = (ch != '.' && ch != ']' && !quotedAssetPath) || (quotedAssetPath && ch != '"');
 			if (regularPathNameChar) return false;
 			AddToken(IdentifierType::PathFileName, currentSection.str);
-			if (!quotedAssetPath) newSectionStr = ".";
+			bool headerTerminator = ch == ']' && !quotedAssetPath;
+			if (!quotedAssetPath && !headerTerminator) newSectionStr = ".";
 			if (quotedAssetPath) quotedAssetPath = false;
+			if (headerTerminator) AddToken(IdentifierType::HeaderClose);
 			break;
 		}
-		case CaptureState::PropertyValue:
+		case CaptureState::PropertyValue: {
 			bool closingVec = propertyType == PropertyType::Vector && ch == ')', closingStr = propertyType == PropertyType::String && ch == '"';
 			if (!closingVec && !closingStr) return false;
 			AddToken(IdentifierType::PropertyValue, currentSection.str);
 			propertyType = PropertyType::NoAssignment;
 			break;
+		}
+		case CaptureState::ActionKey: {
+			bool isRegularCh = ch != ',' && ch != '+' && ch != ']';
+			if (isRegularCh) return false;
+			AddToken(IdentifierType::ActionKey, currentSection.str);
+			nextCapture = CaptureState::ActionKey;
+
+			switch (ch) {
+				case ',': AddToken(IdentifierType::ActionOR); break;
+				case '+': AddToken(IdentifierType::ActionAND); break;
+				case ']': AddToken(IdentifierType::HeaderClose); nextCapture = CaptureState::NotActive; break;
+			}
+			break;
+		}
 	}
 
-	sectionCaptures = CaptureState::NotActive;
+	sectionCaptures = nextCapture;
 	currentSection.str = newSectionStr;
 	currentSection.type = sectionType;
 	return true;
@@ -115,8 +148,9 @@ void AssetLexer::ParseMetadata() {
 		}
 
 		if (newSectionByType) StartNewSection(charType);
+		bool spaceInCaptureDisallowed = sectionCaptures == CaptureState::ActionKey && ch == ' ';
 		bool appendingToSection = ch != ' ' || !capturesNonActive || IsInsideString();
-		if (appendingToSection) currentSection.str += ch;
+		if (appendingToSection && !spaceInCaptureDisallowed) currentSection.str += ch;
 	}
 }
 
@@ -177,6 +211,7 @@ void AssetLexer::ParseHeaderSection() {
 
 	bool beforeExtension = prevToken.identifier == IdentifierType::PathFileName || prevToken.identifier == IdentifierType::HeaderName || prevToken.identifier == IdentifierType::HeaderTag;
 	if (prevSection.str == "." && beforeExtension && !quotedAssetPath) {
+		if (headerType != HeaderType::Path) AddError(ParseErrorType::IncompatibleHeaderType);
 		AddToken(IdentifierType::PathFileExtension, currentSection.str);
 		return;
 	}
@@ -201,15 +236,15 @@ void AssetLexer::ParseHeaderAssign() {
 		currentSection.str = currentSection.str.substr(0, sectionLength - 1);
 	}
 
-	AddToken(IdentifierType::HeaderAssign, HeaderType::Path);
+	AddToken(IdentifierType::HeaderAssign, headerType);
 	bool nameEndsNow = (endsWithDot || endsWithHeaderEnding) && !quotedAssetPath;
 	if (nameEndsNow) {
 		currentSection.str = currentSection.str.substr(0, currentSection.str.size() - 1);
-		AddToken(IdentifierType::PathFileName, currentSection.str);
-		currentSection.str = ".";
+		bool addFileName = !currentSection.str.empty();
+		if (addFileName) { AddToken(IdentifierType::PathFileName, currentSection.str); currentSection.str = "."; }
 		if (endsWithHeaderEnding) CloseHeader();
 	}
-	else SetCapture(CaptureState::PathName, false);
+	else SetCapture(GetPostAssignCapture(), false);
 
 	afterHeaderAssign = true;
 }

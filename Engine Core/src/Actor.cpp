@@ -12,7 +12,7 @@ void DeferredActor::Make(DeferredPtr& deferredPtr, SceneContext* context) {
 
 int Actor::GetSubCount() const {
 	ThrowIfFreed();
-	return GetSelfDataRef().subActors.size();
+	return GetData().subActors.size();
 }
 
 Actor Actor::operator[](int index) const {
@@ -20,7 +20,7 @@ Actor Actor::operator[](int index) const {
 	int numberOfChildren = GetSubCount();
 	if (index < 0 || index >= numberOfChildren) throw std::runtime_error("Attempted to access an invalid sub-actor!");
 
-	ActorData& selfData = GetSelfDataRef();
+	ActorData& selfData = GetData();
 	ActorUUID subActorUUID = selfData.subActors[index];
 	Actor subActor(sceneContext, subActorUUID);
 	return subActor;
@@ -29,7 +29,7 @@ Actor Actor::operator[](int index) const {
 Actor Actor::Super() const {
 	ThrowIfFreed();
 	if (!HasSuper()) throw std::runtime_error("Attempted to access a super-actor from scene root!");
-	ActorUUID superUUID = GetSelfDataRef().superActor;
+	ActorUUID superUUID = GetData().superActor;
 	Actor superActor(sceneContext, superUUID);
 	return superActor;
 }
@@ -41,7 +41,7 @@ void Actor::Delete() {
 }
 
 Actor::Actor(SceneContext* context) : sceneContext(context), selfUUID(MakeUUID()) {
-	ActorData& actorRef = GetSelfDataRef();
+	ActorData& actorRef = GetData();
 	actorRef = ActorData(context);
 }
 

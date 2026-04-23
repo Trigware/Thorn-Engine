@@ -2,6 +2,7 @@
 #include <type_traits>
 #include "Assets.h"
 #include "Actor.h"
+#include "InputManager.h"
 
 namespace ThornEngine {
 
@@ -12,6 +13,7 @@ public:
 	virtual void OnDraw() {}
 	inline Actor Root() { return sceneRoot; }
 	template<ActorTypeConcept T, typename... Args> Actor Top(Args&&... args) { return Root().Add<T>(args...); }
+	InputManager Input;
 private:
 	friend class SceneManager;
 	void DrawScene();

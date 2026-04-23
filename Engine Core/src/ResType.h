@@ -7,28 +7,26 @@ namespace ThornEngine {
 
 enum class ResType {
 	Texture,
-	Audio,
-	Font,
+	Action,
 	Counter
 };
 
 using TextureRes = std::integral_constant<ResType, ResType::Texture>;
-using AudioRes = std::integral_constant<ResType, ResType::Audio>;
-using FontRes = std::integral_constant<ResType, ResType::Font>;
+using ActionRes = std::integral_constant<ResType, ResType::Action>;
 
 template<typename T>
 concept Resource =
-	requires{ T::value; } &&
+	requires { T::value; } &&
 	std::is_same_v<T, std::integral_constant<ResType, T::value>> &&
 	static_cast<int>(T::value) >= 0 && T::value < ResType::Counter;
 
 struct ResTypeData {
 	ResTypeData(ResType resType);
-	ResTypeData(const std::string& dir, const std::string& defExtension) : defaultExtension(defExtension) {
+	ResTypeData(const std::string& dir, const std::string& defExtension = "") : defaultExtension(defExtension) {
 		assetDir = dir + "/";
 		metadataFile = "Meta/" + StrUtils::ToLower(dir) + ".meta";
 	}
-	std::string assetDir, metadataFile, defaultExtension;
+	std::string assetDir = "", metadataFile = "", defaultExtension = "";
 };
 
 }
