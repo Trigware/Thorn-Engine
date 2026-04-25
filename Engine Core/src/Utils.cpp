@@ -21,4 +21,10 @@ std::string StrUtils::GetCase(const std::string& str, bool toLower) {
 	return result;
 }
 
+std::string StrUtils::MakeSpaces(int count) {
+	std::string result = "";
+	for (int i = 0; i < count; i++) result += ' ';
+	return result;
+}
+
 }

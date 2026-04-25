@@ -16,6 +16,7 @@ std::unordered_map<ResType, std::unordered_set<PropertyKind>> AssetParser::suppo
 
 AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 	Token token;
+	headerType = assetLexerRef.headerType;
 	for (index = 0; index < assetLexerRef.tokens.size(); index++) {
 		token = GetToken(index);
 		switch (token.identifier) {
@@ -25,7 +26,6 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 				break;
 			case IdentifierType::HeaderName: latestAsset.assetName = token.GetVal<std::string>(); break;
 			case IdentifierType::HeaderTag: latestAsset.tagName = token.GetVal<std::string>(); break;
-			case IdentifierType::HeaderAssign: latestAsset.headerType = token.GetVal<HeaderType>(); break;
 			case IdentifierType::PathFileName:
 				if (ErrorIfInvalidHeader<FileAsset>("FileAsset")) break;
 				SpecificData<FileAsset>().fileName = token.GetVal<std::string>();
@@ -40,6 +40,8 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 			case IdentifierType::HeaderClose: {
 				if (WasPrevToken(IdentifierType::HeaderAssign)) AddError(ParseErrorType::IncompleteHeaderAssignment);
 				if (WasPrevToken(IdentifierType::HeaderName) && !UninitAllowed()) AddError(ParseErrorType::UninitializedResource);
+				bool closingAction = headerType == HeaderType::Action && !ErrorIfInvalidHeader<KeyExpression>("KeyExpression");
+				if (closingAction) SpecificData<KeyExpression>().MakeTree();
 				containsHeader = true;
 				break;
 			}
@@ -50,7 +52,7 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 				if (!containsHeader) { AddError(ParseErrorType::PropertyAsGlobal, latestProperty.name); break; }
 				break;
 			case IdentifierType::PropertyAssign: latestProperty.type = token.GetVal<PropertyType>(); break;
-			case IdentifierType::PropertyValue:
+			case IdentifierType::PropertyValue: {
 				std::string valAsStr = std::get<std::string>(token.value);
 				switch (latestProperty.type) {
 					case PropertyType::String: latestProperty.value = valAsStr; break;
@@ -58,6 +60,12 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 					case PropertyType::Vector: ParseVectorValue(valAsStr); break;
 				}
 				latestAsset.properties.push_back(latestProperty);
+				break;
+			}
+			case IdentifierType::ActionKey: case IdentifierType::ActionOR: case IdentifierType::ActionAND:
+				if (ErrorIfInvalidHeader<KeyExpression>("KeyExpression")) break;
+				KeyExpression& expression = SpecificData<KeyExpression>();
+				expression.AddToken(token);
 				break;
 		}
 	}
@@ -133,7 +141,7 @@ void AssetParser::HandleAssetProperties(Texture& textureAsset) {
 	int propertyCount = latestAsset.properties.size();
 	for (int i = 0; i < propertyCount; i++) {
 		AssetProperty& property = latestAsset.properties[i];
-		bool propertySupported = supportedProperties[assetManager.resource].contains(property.kind);
+		bool propertySupported = supportedProperties.contains(assetManager.resource) && supportedProperties[assetManager.resource].contains(property.kind);
 		if (property.kind == PropertyKind::Unknown) continue;
 		if (!propertySupported) { AddError(ParseErrorType::InvalidPropertyType, property.name); continue; }
 

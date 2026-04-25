@@ -6,7 +6,7 @@ enum class ActionID { MoveLeft, MoveRight, MoveUp, MoveDown };
 class StartScene : public TH::IScene {
 	TH::Actor spr = Top<TH::Sprite>(TextureID::TimerClock);
 	void OnDraw() override {
-		Input;
+
 	}
 };
 

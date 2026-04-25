@@ -39,7 +39,6 @@ enum class PropertyType {
 using TokenValue = std::variant<
 	std::monostate,
 	int,
-	HeaderType,
 	std::string,
 	PropertyType
 >;
@@ -75,14 +74,6 @@ struct Token {
 	std::string ValToStr() const {
 		const T& originValue = GetVal<T>();
 		if constexpr (std::is_same_v<T, std::string>) return "\"" + originValue + "\"";
-		else if constexpr (std::is_same_v<T, HeaderType>) {
-			std::string result = "HeaderType::";
-			switch (originValue) {
-				case HeaderType::Path: result += "Path"; return result;
-				case HeaderType::Action: result += "Action"; return result;
-				default: result += "Unknown"; return result;
-			}
-		}
 		else if constexpr (std::is_same_v<T, PropertyType>) {
 			std::string result = "PropertyType::";
 			switch (originValue) {

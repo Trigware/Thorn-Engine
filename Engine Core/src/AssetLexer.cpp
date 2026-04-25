@@ -19,7 +19,7 @@ AssetLexer::AssetLexer(AssetManager& manager) : assetManagerRef(manager) {
 	
 	headerType = GetHeaderType();
 	ParseMetadata();
-	PrintTokens();
+	//PrintTokens();
 	AssetParser parser(*this);
 	PrintLexerErrors();
 }
@@ -61,7 +61,7 @@ std::string Token::TokenAsStr() const {
 		case IdentifierType::HeaderIdentifier: typeAsStr = "HeaderIdentifier"; valueAsStr = ValToStr<int>(); break;
 		case IdentifierType::HeaderName: typeAsStr = "HeaderName"; valueAsStr = ValToStr<std::string>(); break;
 		case IdentifierType::HeaderTag: typeAsStr = "HeaderTag"; valueAsStr = ValToStr<std::string>(); break;
-		case IdentifierType::HeaderAssign: typeAsStr = "HeaderAssign"; valueAsStr = ValToStr<HeaderType>(); break;
+		case IdentifierType::HeaderAssign: typeAsStr = "HeaderAssign"; break;
 		case IdentifierType::PathFileName: typeAsStr = "PathFileName"; valueAsStr = ValToStr<std::string>(); break;
 		case IdentifierType::PathFileExtension: typeAsStr = "PathFileExtension"; valueAsStr = ValToStr<std::string>(); break;
 		case IdentifierType::ActionKey: typeAsStr = "ActionKey"; valueAsStr = ValToStr<std::string>(); break;
@@ -96,7 +96,7 @@ bool AssetLexer::HandleCaptureState(char ch, SectionType sectionType) {
 			bool headerTerminator = ch == ']' && !quotedAssetPath;
 			if (!quotedAssetPath && !headerTerminator) newSectionStr = ".";
 			if (quotedAssetPath) quotedAssetPath = false;
-			if (headerTerminator) AddToken(IdentifierType::HeaderClose);
+			if (headerTerminator) CloseHeader();
 			break;
 		}
 		case CaptureState::PropertyValue: {
@@ -115,7 +115,7 @@ bool AssetLexer::HandleCaptureState(char ch, SectionType sectionType) {
 			switch (ch) {
 				case ',': AddToken(IdentifierType::ActionOR); break;
 				case '+': AddToken(IdentifierType::ActionAND); break;
-				case ']': AddToken(IdentifierType::HeaderClose); nextCapture = CaptureState::NotActive; break;
+				case ']': CloseHeader(); nextCapture = CaptureState::NotActive; break;
 			}
 			break;
 		}
@@ -236,7 +236,7 @@ void AssetLexer::ParseHeaderAssign() {
 		currentSection.str = currentSection.str.substr(0, sectionLength - 1);
 	}
 
-	AddToken(IdentifierType::HeaderAssign, headerType);
+	AddToken(IdentifierType::HeaderAssign);
 	bool nameEndsNow = (endsWithDot || endsWithHeaderEnding) && !quotedAssetPath;
 	if (nameEndsNow) {
 		currentSection.str = currentSection.str.substr(0, currentSection.str.size() - 1);

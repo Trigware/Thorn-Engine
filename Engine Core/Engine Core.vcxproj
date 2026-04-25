@@ -148,6 +148,7 @@
     <ClInclude Include="src\Component.h" />
     <ClInclude Include="src\DrawData.h" />
     <ClInclude Include="src\InputManager.h" />
+    <ClInclude Include="src\KeyExpression.h" />
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\SceneContext.h" />
@@ -163,6 +164,7 @@
     <ClCompile Include="src\AssetLexer.cpp" />
     <ClCompile Include="src\AssetParser.cpp" />
     <ClCompile Include="src\DrawData.cpp" />
+    <ClCompile Include="src\KeyExpression.cpp" />
     <ClCompile Include="src\ResType.cpp" />
     <ClCompile Include="src\ResType.h" />
     <ClCompile Include="src\Scene.cpp" />

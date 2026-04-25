@@ -14,6 +14,7 @@ public:
 	static inline char ToUpper(char ch) { return GetCase(ch, false); }
 	static char GetCase(char ch, bool toLower);
 	static std::string GetCase(const std::string& str, bool toLower);
+	static std::string MakeSpaces(int count);
 private:
 	static const int capitalDiff = 'a' - 'A';
 };

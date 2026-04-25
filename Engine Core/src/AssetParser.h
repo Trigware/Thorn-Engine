@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "AssetLexer.h"
+#include "KeyExpression.h"
 
 namespace ThornEngine {
 
@@ -13,7 +14,8 @@ using V4I = std::array<int, 4>;
 
 using AssetSpecificData = std::variant<
 	std::monostate,
-	FileAsset
+	FileAsset,
+	KeyExpression
 >;
 
 using PropertyValue = std::variant<
@@ -40,7 +42,6 @@ struct AssetData {
 	int identifierNumber;
 	std::string assetName, tagName;
 	AssetSpecificData assetSpecificData;
-	HeaderType headerType;
 	std::vector<AssetProperty> properties;
 };
 
@@ -53,6 +54,7 @@ private:
 	AssetLexer& assetLexerRef;
 	AssetData latestAsset;
 	AssetProperty latestProperty;
+	HeaderType headerType = HeaderType::Unknown;
 	bool containsHeader = false;
 	int index = 0;
 	inline void AddError(ParseErrorType type, std::string message = "") { assetLexerRef.parseErrors.emplace_back(message, type, -1, -1, assetLexerRef.metadataPath); }
