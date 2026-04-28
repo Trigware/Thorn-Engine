@@ -48,6 +48,7 @@ struct AssetData {
 class AssetParser {
 public:
 	AssetParser(AssetLexer& lexer);
+	inline void AddError(ParseErrorType type, std::string message = "") { assetLexerRef.parseErrors.emplace_back(message, type, -1, -1, assetLexerRef.metadataPath); }
 private:
 	static std::unordered_map<std::string, PropertyKind> propertyNameKindMap;
 	static std::unordered_map<ResType, std::unordered_set<PropertyKind>> supportedProperties;
@@ -57,7 +58,6 @@ private:
 	HeaderType headerType = HeaderType::Unknown;
 	bool containsHeader = false;
 	int index = 0;
-	inline void AddError(ParseErrorType type, std::string message = "") { assetLexerRef.parseErrors.emplace_back(message, type, -1, -1, assetLexerRef.metadataPath); }
 	template<typename T>
 	bool ErrorIfInvalidHeader(std::string type = "") {
 		if (std::holds_alternative<std::monostate>(latestAsset.assetSpecificData)) latestAsset.assetSpecificData = T();

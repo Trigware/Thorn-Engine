@@ -15,12 +15,7 @@ void SceneManager::ExecuteUpdateLoop() {
 }
 
 void SceneManager::HandleEvents() {
-	SDL_Event currentEvent;
-	while (SDL_PollEvent(&currentEvent)) {
-		switch (currentEvent.type) {
-			case SDL_QUIT: windowRunning = false; break;
-		}
-	}
+	// TODO
 }
 
 void IScene::DrawScene() {

@@ -4,6 +4,12 @@
 
 namespace ThornEngine {
 
+/* @brief Component used for displaying single 2D images onto the window.
+* 
+* Allows working with spritesheets and can display a small section described by the texture's resource properties.
+* 
+* Requires the Transform component.
+*/
 class DrawData : public IComponent {
 public:
 	DrawData() = default;

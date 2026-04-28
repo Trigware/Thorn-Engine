@@ -21,14 +21,34 @@ struct IActionNode {
 };
 
 using KeyExprNode = std::unique_ptr<IActionNode>;
+class AssetParser;
 
-struct ActionKey : public IActionNode {
-	static inline KeyExprNode Make(const std::string& keyStr) { return std::make_unique<ActionKey>(keyStr); }
-	ActionKey(const std::string& keyStr) : key(SDL_GetKeyFromName(keyStr.c_str())), keyAsStr(keyStr) {}
+enum class SpecialKey {
+	Unknown,
+	ArrowLeft,
+	ArrowRight,
+	ArrowUp,
+	ArrowDown
+};
+
+class ActionKey : public IActionNode {
+public:
+	static inline KeyExprNode Make(const std::string& keyStr, AssetParser* parserPtr) { return std::make_unique<ActionKey>(keyStr, parserPtr); }
+	ActionKey(const std::string& keyStr, AssetParser* parserPtr);
+
 	inline std::string AsStr(int nestingLevel) const override;
+
+private:
+	SDL_Keycode GetKeycode();
+	SDL_Keycode GetSpecialKey(const std::string& loweredStr);
+	void AddError(ParseErrorType errorType, std::string message = "");
 
 	SDL_Keycode key = SDLK_UNKNOWN;
 	std::string keyAsStr = "";
+	AssetParser* parser = nullptr;
+	const inline static std::unordered_map<std::string, SpecialKey> specialKeyMap = {
+		{"left", SpecialKey::ArrowLeft}, {"right", SpecialKey::ArrowRight}, {"up", SpecialKey::ArrowUp}, {"down", SpecialKey::ArrowDown}
+	};
 };
 
 struct ActionOperator : public IActionNode {
@@ -50,11 +70,13 @@ public:
 	inline void AddToken(const Token& identifier) { tokens.push_back(identifier); }
 	void MakeTree();
 private:
+	friend class AssetParser;
 	KeyExprNode ParseExpression(int precedenceThreshold = 0);
 
-	std::unordered_map<IdentifierType, int> operatorPrecedence = { {IdentifierType::ActionOR, 1}, {IdentifierType::ActionAND, 2} };
+	const inline static std::unordered_map<IdentifierType, int> operatorPrecedence = { {IdentifierType::ActionOR, 1}, {IdentifierType::ActionAND, 2} };
 	std::vector<Token> tokens;
 	KeyExprNode rootNode;
+	AssetParser* parser = nullptr;
 	int currentIndex = 0;
 };
 

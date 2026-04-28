@@ -17,7 +17,9 @@ std::unordered_map<ResType, std::unordered_set<PropertyKind>> AssetParser::suppo
 AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 	Token token;
 	headerType = assetLexerRef.headerType;
-	for (index = 0; index < assetLexerRef.tokens.size(); index++) {
+	int tokenCount = assetLexerRef.tokens.size();
+
+	for (index = 0; index < tokenCount; index++) {
 		token = GetToken(index);
 		switch (token.identifier) {
 			case IdentifierType::HeaderIdentifier:
@@ -40,8 +42,11 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 			case IdentifierType::HeaderClose: {
 				if (WasPrevToken(IdentifierType::HeaderAssign)) AddError(ParseErrorType::IncompleteHeaderAssignment);
 				if (WasPrevToken(IdentifierType::HeaderName) && !UninitAllowed()) AddError(ParseErrorType::UninitializedResource);
+
+				int errorCount = assetLexerRef.parseErrors.size();
 				bool closingAction = headerType == HeaderType::Action && !ErrorIfInvalidHeader<KeyExpression>("KeyExpression");
-				if (closingAction) SpecificData<KeyExpression>().MakeTree();
+				bool buildTree = closingAction && errorCount == 0;
+				if (buildTree) SpecificData<KeyExpression>().MakeTree();
 				containsHeader = true;
 				break;
 			}
@@ -65,12 +70,14 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 			case IdentifierType::ActionKey: case IdentifierType::ActionOR: case IdentifierType::ActionAND:
 				if (ErrorIfInvalidHeader<KeyExpression>("KeyExpression")) break;
 				KeyExpression& expression = SpecificData<KeyExpression>();
+				expression.parser = this;
 				expression.AddToken(token);
 				break;
 		}
 	}
 
-	if (token.identifier != IdentifierType::HeaderClose && token.identifier != IdentifierType::PropertyValue) {
+	bool lastTokenInvalid = token.identifier != IdentifierType::HeaderClose && token.identifier != IdentifierType::PropertyValue && tokenCount > 0;
+	if (lastTokenInvalid) {
 		AddError(ParseErrorType::InvalidTerminatingToken);
 		return;
 	}

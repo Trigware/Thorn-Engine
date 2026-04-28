@@ -11,6 +11,13 @@ namespace ThornEngine {
 
 class Actor;
 
+/* @brief Interface for engine core and custom-made components.
+* 
+* Components inheriting this interface must have a default constructor.
+* 
+* Gets direct access to key engine features such as resources and the SceneContext.
+* Inproper use of these features can could unexpected behaviour.
+*/
 class IComponent {
 public:
 	virtual ~IComponent() = default;
@@ -18,9 +25,10 @@ public:
 	virtual void OnDraw() {}
 	SceneContext* sceneContext = nullptr;
 	IComponent(SceneContext* context) : sceneContext(context) { }
+	inline Actor GetOwner();
+protected:
 	template<Resource Res, Enum ID>
 	ConditionalAsset<Res>* GetAsset(ID identifier) { return sceneContext->appContext->GetAsset<Res>(identifier); }
-	inline Actor GetOwner();
 private:
 	friend class Actor;
 	ActorUUID linkedActorUUID = 0;
@@ -34,6 +42,12 @@ class IActorType;
 template<typename T> concept ComponentConcept = std::is_base_of_v<IComponent, T> && !std::is_same_v<IComponent, T>;
 template<typename T> concept ActorTypeConcept = std::is_base_of_v<IActorType, T> && !std::is_same_v<IActorType, T>;
 
+/* @brief Interface for engine core and custom-made actor types.
+* 
+* Derived classes must override the GetSet function that ensures that the components in the returned set always belong to an actor created from that actor type.
+* 
+* A sub-actor must be created by an using the actor type's constructors.
+*/
 class IActorType {
 public:
 	virtual ~IActorType() = default;

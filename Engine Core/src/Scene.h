@@ -3,9 +3,15 @@
 #include "Assets.h"
 #include "Actor.h"
 #include "InputManager.h"
+#include "InputData.h"
 
 namespace ThornEngine {
 
+/* @brief Interface for all scenes.
+* 
+* Can call the Top function to create sub-actors to the root of this scene.
+* Contains member variables for managing context-aware systems like Input.
+*/
 class IScene {
 public:
 	virtual ~IScene() = default;
@@ -40,6 +46,7 @@ private:
 	void HandleEvents();
 	std::unique_ptr<IScene> activeScene;
 	AppContext* appContext = nullptr;
+	InputData inputData;
 	bool windowRunning = true;
 };
 

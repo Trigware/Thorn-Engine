@@ -24,6 +24,11 @@ struct AppConfig {
 	int initWidth = 0, initHeight = 0;
 };
 
+/* @brief Type representing a Thorn Engine application.
+* 
+* Must call the CoreResources function in order to link resources to the application.
+* Applications which already terminated can be ran with previous configuration and resource options.
+*/
 class App {
 public:
 	App(const AppConfig& config) : appConfig(config) { Init(); }

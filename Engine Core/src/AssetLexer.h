@@ -85,6 +85,7 @@ struct Token {
 		}
 		else return std::to_string(originValue);
 	}
+	inline std::string GetStrVal() { return GetVal<std::string>(); }
 };
 
 struct Section {
@@ -113,7 +114,8 @@ enum class ParseErrorType {
 	InvalidPropertyType,
 	IncompatibleHeaderType,
 	IncompleteHeaderAssignment,
-	UninitializedResource
+	UninitializedResource,
+	UnrecognizedAction
 };
 
 struct ParseError {
@@ -142,6 +144,7 @@ struct ParseError {
 			case ParseErrorType::IncompatibleHeaderType: result += "attempted to use a feature from another header type"; break;
 			case ParseErrorType::IncompleteHeaderAssignment: result += "expected to encounter non header terminator after header assignment"; break;
 			case ParseErrorType::UninitializedResource: result += "encountered an uninitialized resource whose header type enforces assignment"; break;
+			case ParseErrorType::UnrecognizedAction: result += "encountered an action which was not recognized as valid"; break;
 			default: result += "UNKNOWN ERROR"; break;
 		}
 		if (!error.sectionMessage.empty()) result += ": " + error.sectionMessage;

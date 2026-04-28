@@ -56,6 +56,10 @@ struct DeferredActor {
 	void Make(DeferredPtr& deferredRef, SceneContext* context);
 };
 
+/* @brief Reference to an entity with components belonging to the scene tree.
+* 
+* It's a light-weight and safely-copyable type that stores a 64-bit randomly-generated identifier with a pointer to scene information.
+*/
 class Actor {
 public:
 	Actor() = delete;

@@ -5,6 +5,12 @@
 
 namespace ThornEngine {
 
+/* @brief Component that stores position and scale as a 2-dimensional vectors of decimal numbers.
+* 
+* Actors do not inherit a global transform from their super actors.
+* 
+* Frequently used as a necessity in higher-level components.
+*/
 struct Transform : IComponent {
 	Transform() { *this = Identity(); }
 	V2F pos, scale;
@@ -17,6 +23,7 @@ struct Transform : IComponent {
 	static const Transform Identity() { return Transform(0, 0, 1, 1); }
 };
 
+/// @brief Abbreviation for the transform component. 
 using TForm = Transform;
 
 }

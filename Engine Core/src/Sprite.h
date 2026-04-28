@@ -3,6 +3,10 @@
 
 namespace ThornEngine {
 
+/* @brief Actor type that binds the Transform and DrawData components to an actor.
+* 
+* Used for displaying single 2D images onto the screen that have attributes such as position and scale.
+*/
 struct Sprite : IActorType {
 	inline Sprite(Actor owner) { owner.BindMore<Transform, DrawData>(); }
 	template<Enum T>

@@ -17,6 +17,10 @@ concept IsReal = std::is_same_v<T, float> || std::is_same_v<T, double>;
 template<typename T>
 concept Generatable = Is32Bit<T> || Is64Bit<T> || IsReal<T>;
 
+/* @brief Math class consisting of static function that generate random numbers.
+* 
+* @tparam T Type of randomly-generated value (either int32, uint32, int64, uint64, float or double).
+*/
 template<Generatable T = uint32_t>
 class Random {
 public:
