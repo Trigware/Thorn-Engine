@@ -1,5 +1,6 @@
 #include "DrawData.h"
 #include "Actor.h"
+#include "AppContext.h"
 
 namespace ThornEngine {
 

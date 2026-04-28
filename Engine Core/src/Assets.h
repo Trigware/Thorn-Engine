@@ -7,8 +7,11 @@
 #include <string>
 #include <unordered_map>
 #include <array>
+#include <type_traits>
+#include <memory>
 #include "ResType.h"
 #include "Vector.h"
+#include "ActionNode.h"
 
 namespace ThornEngine {
 
@@ -22,16 +25,15 @@ struct Texture {
 	bool isSegmented = false;
 };
 
-struct Action {
-	Action() = default;
-};
+class IActionNode;
+using KeyExpression = std::unique_ptr<IActionNode>;
 
 using Asset = std::variant<
 	Texture,
-	Action
+	KeyExpression
 >;
 
-struct AppContext;
+class AppContext;
 
 struct AssetManager {
 	AssetManager(ResType res, std::type_index id, AppContext* context);
@@ -44,34 +46,9 @@ struct AssetManager {
 
 template<Resource Res>
 using ConditionalAsset =
-	std::conditional_t<std::is_same_v<Res, TextureRes>, Texture, Action
+	std::conditional_t<std::is_same_v<Res, TextureRes>, Texture, KeyExpression
 >;
 
-struct AppContext {
-	using ManagerPtr = std::unique_ptr<AssetManager>&;
-
-	template<Resource Res, Enum ID>
-	ConditionalAsset<Res>* GetAsset(ID identifier) {
-		ResType wantedResourceType = static_cast<ResType>(Res::value);
-		if (!assetManagers.contains(wantedResourceType))
-			throw std::runtime_error("Attempted to obtain an asset of a type which has no associated identification enum!");
-
-		ManagerPtr wantedManager = assetManagers[wantedResourceType];
-		if (wantedManager->identifierType != typeid(ID))
-			throw std::runtime_error("Attempted to obtain an asset with the incorrect identification enum type!");
-
-		int assetIndex = static_cast<int>(identifier);
-		if (!wantedManager->assets.contains(assetIndex))
-			throw std::runtime_error("Asset metadata for wanted type isn't synced up with the identification enum type!");
-
-		Asset& rawAsset = wantedManager->assets[assetIndex];
-		ConditionalAsset<Res>& actualAsset = std::get<ConditionalAsset<Res>>(rawAsset);
-		return &actualAsset;
-	}
-
-	std::unordered_map<ResType, std::unique_ptr<AssetManager>> assetManagers;
-	SDL_Window* window = nullptr;
-	SDL_Renderer* renderer = nullptr;
-};
+using ManagerPtr = std::unique_ptr<AssetManager>&;
 
 }

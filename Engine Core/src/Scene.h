@@ -3,9 +3,10 @@
 #include "Assets.h"
 #include "Actor.h"
 #include "InputManager.h"
-#include "InputData.h"
 
 namespace ThornEngine {
+
+class AppContext;
 
 /* @brief Interface for all scenes.
 * 
@@ -37,6 +38,7 @@ public:
 	template<SceneConcept T>
 	void SetStartScene() {
 		activeScene = std::make_unique<T>();
+		activeScene->Input.appContext = appContext;
 		activeScene->Init(appContext);
 		activeScene->OnStart();
 		ExecuteUpdateLoop();
@@ -46,7 +48,6 @@ private:
 	void HandleEvents();
 	std::unique_ptr<IScene> activeScene;
 	AppContext* appContext = nullptr;
-	InputData inputData;
 	bool windowRunning = true;
 };
 

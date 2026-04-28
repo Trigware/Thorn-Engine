@@ -53,14 +53,14 @@ ActionKey::ActionKey(const std::string& keyStr, AssetParser* parserPtr) {
 	if (isKeyInvalid) AddError(ParseErrorType::UnrecognizedAction, keyStr);
 }
 
-void KeyExpression::MakeTree() {
+void KeyExpressionBuilder::MakeTree() {
 	currentIndex = -1;
 	rootNode = ParseExpression(0);
 }
 
 void ActionKey::AddError(ParseErrorType errorType, std::string message) { parser->AddError(errorType, message); }
 
-KeyExprNode KeyExpression::ParseExpression(int precedenceThreshold) {
+KeyExprNode KeyExpressionBuilder::ParseExpression(int precedenceThreshold) {
 	currentIndex++;
 	Token nullDelimiterToken = tokens[currentIndex];
 	std::string nullDelimiterKey = nullDelimiterToken.GetStrVal();
@@ -72,7 +72,7 @@ KeyExprNode KeyExpression::ParseExpression(int precedenceThreshold) {
 		if (encounteredEOF) break;
 
 		Token currentOperator = tokens[currentIndex];
-		int bindingPower = KeyExpression::operatorPrecedence.at(currentOperator.identifier);
+		int bindingPower = KeyExpressionBuilder::operatorPrecedence.at(currentOperator.identifier);
 
 		bool endSubExpr = bindingPower < precedenceThreshold;
 		if (endSubExpr) { currentIndex--; break; }

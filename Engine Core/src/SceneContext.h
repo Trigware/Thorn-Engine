@@ -7,7 +7,7 @@ namespace ThornEngine {
 /// @brief Randomly-generated 64-bit number used to identify actors belonging to a scene tree.
 using ActorUUID = uint64_t;
 
-struct AppContext;
+class AppContext;
 struct DeferredActor;
 class ActorData;
 

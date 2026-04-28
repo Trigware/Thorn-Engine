@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include "Assets.h"
 #include "SceneContext.h"
+#include "AppContext.h"
 
 namespace ThornEngine {
 

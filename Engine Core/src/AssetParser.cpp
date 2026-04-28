@@ -2,6 +2,7 @@
 #include "AssetParser.h"
 #include "Utils.h"
 #include "Vector.h"
+#include "AppContext.h"
 
 namespace ThornEngine {
 
@@ -25,6 +26,7 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 			case IdentifierType::HeaderIdentifier:
 				if (index > 0) HandleAsset();
 				latestAsset.identifierNumber = token.GetVal<int>();
+				latestAsset.idNumChanged = true;
 				break;
 			case IdentifierType::HeaderName: latestAsset.assetName = token.GetVal<std::string>(); break;
 			case IdentifierType::HeaderTag: latestAsset.tagName = token.GetVal<std::string>(); break;
@@ -44,9 +46,9 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 				if (WasPrevToken(IdentifierType::HeaderName) && !UninitAllowed()) AddError(ParseErrorType::UninitializedResource);
 
 				int errorCount = assetLexerRef.parseErrors.size();
-				bool closingAction = headerType == HeaderType::Action && !ErrorIfInvalidHeader<KeyExpression>("KeyExpression");
+				bool closingAction = headerType == HeaderType::Action && !ErrorIfInvalidHeader<KeyExpressionBuilder>("KeyExpression");
 				bool buildTree = closingAction && errorCount == 0;
-				if (buildTree) SpecificData<KeyExpression>().MakeTree();
+				if (buildTree) SpecificData<KeyExpressionBuilder>().MakeTree();
 				containsHeader = true;
 				break;
 			}
@@ -68,8 +70,8 @@ AssetParser::AssetParser(AssetLexer& lexer) : assetLexerRef(lexer) {
 				break;
 			}
 			case IdentifierType::ActionKey: case IdentifierType::ActionOR: case IdentifierType::ActionAND:
-				if (ErrorIfInvalidHeader<KeyExpression>("KeyExpression")) break;
-				KeyExpression& expression = SpecificData<KeyExpression>();
+				if (ErrorIfInvalidHeader<KeyExpressionBuilder>("KeyExpression")) break;
+				KeyExpressionBuilder& expression = SpecificData<KeyExpressionBuilder>();
 				expression.parser = this;
 				expression.AddToken(token);
 				break;
@@ -118,16 +120,27 @@ void AssetParser::ParseVectorValue(std::string vecAsStr) {
 }
 
 void AssetParser::HandleAsset() {
+	if (!latestAsset.idNumChanged) return;
+
 	AssetManager& assetManager = assetLexerRef.assetManagerRef;
 	ResType assetType = assetManager.resource;
+
+	int idNumber = latestAsset.identifierNumber;
+	bool identifierRedefined = assetManager.assets.contains(idNumber);
+	if (identifierRedefined)
+		AddError(ParseErrorType::AssetIdentifierRedefinition, std::to_string(idNumber));
+
 	switch (assetType) {
 		case ResType::Texture: HandleTexture(); break;
+		case ResType::Action: HandleAction(); break;
 	}
+
+	latestAsset = AssetData();
 }
 
 void AssetParser::HandleTexture() {
 	ErrorIfInvalidHeader<FileAsset>();
-	FileAsset& fileAsset = std::get<FileAsset>(latestAsset.assetSpecificData);
+	FileAsset& fileAsset = SpecificData<FileAsset>();
 	ResTypeData typeData(ResType::Texture);
 	std::string assetPath = typeData.assetDir;
 	assetPath += fileAsset.fileName.empty() ? latestAsset.assetName : fileAsset.fileName;
@@ -141,6 +154,13 @@ void AssetParser::HandleTexture() {
 
 	HandleAssetProperties(textureAsset);
 	assetManager.assets[latestAsset.identifierNumber] = textureAsset;
+}
+
+void AssetParser::HandleAction() {
+	AssetManager& assetManager = assetLexerRef.assetManagerRef;
+	KeyExpressionBuilder& keyExprBuilder = SpecificData<KeyExpressionBuilder>();
+	KeyExpression& keyExpression = keyExprBuilder.rootNode;
+	assetManager.assets[latestAsset.identifierNumber] = std::move(keyExpression);
 }
 
 void AssetParser::HandleAssetProperties(Texture& textureAsset) {
@@ -160,13 +180,6 @@ void AssetParser::HandleAssetProperties(Texture& textureAsset) {
 				textureAsset.bottomRightSegmentSize = V2I(segmentSizes[2], segmentSizes[3]); break;
 		}
 	}
-
-	int idNumber = latestAsset.identifierNumber;
-	if (assetManager.assets.contains(idNumber)) {
-		AddError(ParseErrorType::AssetIdentifierRedefinition, std::to_string(idNumber));
-		return;
-	}
-	latestAsset = AssetData();
 }
 
 }

@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "AppContext.h"
 
 namespace ThornEngine {
 
@@ -15,7 +16,25 @@ void SceneManager::ExecuteUpdateLoop() {
 }
 
 void SceneManager::HandleEvents() {
-	// TODO
+	SDL_Event event;
+	appContext->inputData.ClearEvents();
+
+	while (SDL_PollEvent(&event)) {
+	switch (event.type) {
+		case SDL_QUIT: windowRunning = false; break;
+		case SDL_KEYDOWN: {
+			bool isHeld = event.key.repeat >= 1;
+			KeyList& usedList = isHeld ? appContext->inputData.heldKeys : appContext->inputData.tappedKeys;
+			SDL_Keycode keyCode = event.key.keysym.sym;
+			usedList.push_back(keyCode);
+			break;
+		}
+		case SDL_KEYUP: {
+			SDL_Keycode keyCode = event.key.keysym.sym;
+			appContext->inputData.releasedKeys.push_back(keyCode);
+			break;
+		}
+	}}
 }
 
 void IScene::DrawScene() {

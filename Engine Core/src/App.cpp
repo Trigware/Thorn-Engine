@@ -1,7 +1,7 @@
-#include "App.h"
 #include <iostream>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
+#include "App.h"
 
 namespace ThornEngine {
 

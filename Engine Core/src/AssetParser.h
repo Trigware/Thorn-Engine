@@ -15,7 +15,7 @@ using V4I = std::array<int, 4>;
 using AssetSpecificData = std::variant<
 	std::monostate,
 	FileAsset,
-	KeyExpression
+	KeyExpressionBuilder
 >;
 
 using PropertyValue = std::variant<
@@ -43,6 +43,7 @@ struct AssetData {
 	std::string assetName, tagName;
 	AssetSpecificData assetSpecificData;
 	std::vector<AssetProperty> properties;
+	bool idNumChanged = false;
 };
 
 class AssetParser {
@@ -69,6 +70,7 @@ private:
 	void ParseVectorValue(std::string vecAsStr);
 	void HandleAsset();
 	void HandleTexture();
+	void HandleAction();
 	template<typename TProp, typename T, typename... Other>
 	void SetPropertyRecurse(TProp& propertyField, AssetProperty& propertyData) {
 		if (std::holds_alternative<T>(propertyData.value)) {

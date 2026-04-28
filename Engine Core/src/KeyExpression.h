@@ -5,22 +5,10 @@
 #include <iostream>
 #include "AssetLexer.h"
 #include "Utils.h"
+#include "ActionNode.h"
 
 namespace ThornEngine {
 
-struct IActionNode {
-	virtual ~IActionNode() = default;
-	virtual std::string AsStr(int nestingLevel) const = 0;
-
-	friend std::ostream& operator<<(std::ostream& os, const IActionNode& actionNode) {
-		os << actionNode.AsStr(0);
-		return os;
-	}
-
-	const int indentSpaceCount = 3;
-};
-
-using KeyExprNode = std::unique_ptr<IActionNode>;
 class AssetParser;
 
 enum class SpecialKey {
@@ -42,6 +30,7 @@ private:
 	SDL_Keycode GetKeycode();
 	SDL_Keycode GetSpecialKey(const std::string& loweredStr);
 	void AddError(ParseErrorType errorType, std::string message = "");
+	bool Eval(InputState inputState, const InputData& inputData) const override { return false; }
 
 	SDL_Keycode key = SDLK_UNKNOWN;
 	std::string keyAsStr = "";
@@ -60,12 +49,13 @@ struct ActionOperator : public IActionNode {
 		identifierType(opType), lhsNode(std::move(lhs)), rhsNode(std::move(rhs)) {}
 
 	std::string AsStr(int nestingLevel) const override;
+	bool Eval(InputState inputState, const InputData& inputData) const override { return false; }
 
 	IdentifierType identifierType = IdentifierType::Unknown;
 	KeyExprNode lhsNode, rhsNode;
 };
 
-struct KeyExpression {
+struct KeyExpressionBuilder {
 public:
 	inline void AddToken(const Token& identifier) { tokens.push_back(identifier); }
 	void MakeTree();

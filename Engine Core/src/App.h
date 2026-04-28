@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "Assets.h"
 #include "Scene.h"
+#include "AppContext.h"
 
 namespace ThornEngine {
 
