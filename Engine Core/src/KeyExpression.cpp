@@ -16,6 +16,27 @@ std::string ActionOperator::AsStr(int nestingLevel) const {
 	return result;
 }
 
+bool ActionKey::Eval(const InputData& inputData, InputType inputType) const {
+	bool currentActive = inputData.currentSet[scanCode] >= 1;
+	const KeySet& prevSet = inputData.prevSet;
+	bool prevActive = prevSet[scanCode] >= 1;
+
+	switch (inputType) {
+		case InputType::Tap: return currentActive && !prevActive;
+		case InputType::Hold: return currentActive;
+		case InputType::Release: return !currentActive && prevActive;
+	}
+	return false;
+}
+
+bool ActionOperator::Eval(const InputData& inputData, InputType inputType) const {
+	switch (identifierType) {
+		case IdentifierType::ActionOR: return lhsNode->Eval(inputData, inputType) || rhsNode->Eval(inputData, inputType);
+		case IdentifierType::ActionAND: return lhsNode->Eval(inputData, inputType) && rhsNode->Eval(inputData, inputType);
+		default: return false;
+	}
+}
+
 SDL_Keycode ActionKey::GetKeycode() {
 	std::string loweredStr = StrUtils::ToLower(keyAsStr);
 	int isNotChar = loweredStr.size() != 1;
@@ -48,8 +69,8 @@ std::string ActionKey::AsStr(int nestingLevel) const {
 ActionKey::ActionKey(const std::string& keyStr, AssetParser* parserPtr) {
 	keyAsStr = keyStr;
 	parser = parserPtr;
-	key = GetKeycode();
-	bool isKeyInvalid = key == SDLK_UNKNOWN;
+	scanCode = SDL_GetScancodeFromKey(GetKeycode());
+	bool isKeyInvalid = scanCode == SDL_SCANCODE_UNKNOWN;
 	if (isKeyInvalid) AddError(ParseErrorType::UnrecognizedAction, keyStr);
 }
 

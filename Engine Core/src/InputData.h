@@ -1,10 +1,16 @@
 #pragma once
-#include <vector>
 #include <SDL.h>
+#include <array>
 
-using KeyList = std::vector<SDL_Keycode>;
+using KeySet = std::array<Uint8, SDL_NUM_SCANCODES>;
+
+enum class InputType {
+	Unknown,
+	Tap,
+	Hold,
+	Release
+};
 
 struct InputData {
-	void ClearEvents() { tappedKeys.clear(); heldKeys.clear(); releasedKeys.clear(); }
-	KeyList tappedKeys, heldKeys, releasedKeys;
+	KeySet currentSet = {}, prevSet = {};
 };

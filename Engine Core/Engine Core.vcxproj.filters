@@ -72,9 +72,6 @@
     <ClInclude Include="src\ActionNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\InputState.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\AppContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>

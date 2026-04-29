@@ -25,14 +25,14 @@ public:
 	ActionKey(const std::string& keyStr, AssetParser* parserPtr);
 
 	inline std::string AsStr(int nestingLevel) const override;
+	bool Eval(const InputData& inputData, InputType inputType) const override;
 
 private:
 	SDL_Keycode GetKeycode();
 	SDL_Keycode GetSpecialKey(const std::string& loweredStr);
 	void AddError(ParseErrorType errorType, std::string message = "");
-	bool Eval(InputState inputState, const InputData& inputData) const override { return false; }
 
-	SDL_Keycode key = SDLK_UNKNOWN;
+	SDL_Scancode scanCode = SDL_SCANCODE_UNKNOWN;
 	std::string keyAsStr = "";
 	AssetParser* parser = nullptr;
 	const inline static std::unordered_map<std::string, SpecialKey> specialKeyMap = {
@@ -49,7 +49,7 @@ struct ActionOperator : public IActionNode {
 		identifierType(opType), lhsNode(std::move(lhs)), rhsNode(std::move(rhs)) {}
 
 	std::string AsStr(int nestingLevel) const override;
-	bool Eval(InputState inputState, const InputData& inputData) const override { return false; }
+	bool Eval(const InputData& inputData, InputType inputType) const override;
 
 	IdentifierType identifierType = IdentifierType::Unknown;
 	KeyExprNode lhsNode, rhsNode;

@@ -16,24 +16,16 @@ void SceneManager::ExecuteUpdateLoop() {
 }
 
 void SceneManager::HandleEvents() {
-	SDL_Event event;
-	appContext->inputData.ClearEvents();
+	KeySet& currentSet = appContext->inputData.currentSet;
+	appContext->inputData.prevSet = currentSet;
+	int numKeyCount = 0;
+	const Uint8* keySetPtr = SDL_GetKeyboardState(&numKeyCount);
+	std::copy(keySetPtr, keySetPtr + SDL_NUM_SCANCODES, currentSet.begin());
 
+	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 	switch (event.type) {
 		case SDL_QUIT: windowRunning = false; break;
-		case SDL_KEYDOWN: {
-			bool isHeld = event.key.repeat >= 1;
-			KeyList& usedList = isHeld ? appContext->inputData.heldKeys : appContext->inputData.tappedKeys;
-			SDL_Keycode keyCode = event.key.keysym.sym;
-			usedList.push_back(keyCode);
-			break;
-		}
-		case SDL_KEYUP: {
-			SDL_Keycode keyCode = event.key.keysym.sym;
-			appContext->inputData.releasedKeys.push_back(keyCode);
-			break;
-		}
 	}}
 }
 
