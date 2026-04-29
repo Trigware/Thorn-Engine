@@ -8,9 +8,7 @@
 #include <unordered_set>
 #include "Random.h"
 #include "Component.h"
-#include "Transform.h"
 #include "SceneContext.h"
-#include "DrawData.h"
 
 namespace ThornEngine {
 

@@ -6,9 +6,12 @@ enum class ActionID { MoveLeft, MoveRight, MoveUp, MoveDown };
 class StartScene : public TH::IScene {
 	TH::Actor spr = Top<TH::Sprite>(TextureID::TimerClock);
 	void OnDraw() override {
-		if (Input.IsActionTapped(ActionID::MoveRight)) std::cout << "TAP" << std::endl;
-		if (Input.IsActionHeld(ActionID::MoveRight)) std::cout << "HOLD" << std::endl;
-		if (Input.IsActionReleased(ActionID::MoveRight)) std::cout << "RELEASED" << std::endl;
+		TH::V2F moveDir = TH::V2F::Zero;
+		if (Input.IsActionHeld(ActionID::MoveLeft)) moveDir.x--;
+		if (Input.IsActionHeld(ActionID::MoveRight)) moveDir.x++;
+		if (Input.IsActionHeld(ActionID::MoveUp)) moveDir.y--;
+		if (Input.IsActionHeld(ActionID::MoveDown)) moveDir.y++;
+		spr.Get<TH::TForm>().pos += moveDir.GetNormalized() * 5;
 	}
 };
 

@@ -16,23 +16,10 @@ std::string ActionOperator::AsStr(int nestingLevel) const {
 	return result;
 }
 
-bool ActionKey::Eval(const InputData& inputData, InputType inputType) const {
-	bool currentActive = inputData.currentSet[scanCode] >= 1;
-	const KeySet& prevSet = inputData.prevSet;
-	bool prevActive = prevSet[scanCode] >= 1;
-
-	switch (inputType) {
-		case InputType::Tap: return currentActive && !prevActive;
-		case InputType::Hold: return currentActive;
-		case InputType::Release: return !currentActive && prevActive;
-	}
-	return false;
-}
-
-bool ActionOperator::Eval(const InputData& inputData, InputType inputType) const {
+bool ActionOperator::Eval(const KeySet& keySet) const {
 	switch (identifierType) {
-		case IdentifierType::ActionOR: return lhsNode->Eval(inputData, inputType) || rhsNode->Eval(inputData, inputType);
-		case IdentifierType::ActionAND: return lhsNode->Eval(inputData, inputType) && rhsNode->Eval(inputData, inputType);
+		case IdentifierType::ActionOR: return lhsNode->Eval(keySet) || rhsNode->Eval(keySet);
+		case IdentifierType::ActionAND: return lhsNode->Eval(keySet) && rhsNode->Eval(keySet);
 		default: return false;
 	}
 }

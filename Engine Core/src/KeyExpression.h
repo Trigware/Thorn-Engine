@@ -25,7 +25,7 @@ public:
 	ActionKey(const std::string& keyStr, AssetParser* parserPtr);
 
 	inline std::string AsStr(int nestingLevel) const override;
-	bool Eval(const InputData& inputData, InputType inputType) const override;
+	bool Eval(const KeySet& keySet) const override { return keySet[scanCode] >= 1; }
 
 private:
 	SDL_Keycode GetKeycode();
@@ -49,7 +49,7 @@ struct ActionOperator : public IActionNode {
 		identifierType(opType), lhsNode(std::move(lhs)), rhsNode(std::move(rhs)) {}
 
 	std::string AsStr(int nestingLevel) const override;
-	bool Eval(const InputData& inputData, InputType inputType) const override;
+	bool Eval(const KeySet& keySet) const override;
 
 	IdentifierType identifierType = IdentifierType::Unknown;
 	KeyExprNode lhsNode, rhsNode;

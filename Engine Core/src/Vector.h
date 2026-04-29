@@ -16,10 +16,19 @@ struct V2 {
 	V2(T newX, T newY) : x(newX), y(newY) {}
 	constexpr explicit V2(T value) : x(value), y(value) {}
 	static const V2 Zero, One, Left, Right, Up, Down;
-	V2 operator*(const V2& other) { return V2(x * other.x, y * other.y); }
-	V2 operator-(const V2& other) { return V2(x - other.x, y - other.y); }
-	V2 operator/(float scalar) { return V2(x / scalar, y / scalar); }
+	V2 operator*(const V2& other) const { return V2(x * other.x, y * other.y); }
+	V2 operator-(const V2& other) const { return V2(x - other.x, y - other.y); }
+	V2 operator*(float scalar) const { return V2(x * scalar, y * scalar); }
+	V2 operator/(float scalar) const { return V2(x / scalar, y / scalar); }
+	V2 operator+=(const V2& other) { x += other.x; y += other.y; return *this; }
 	V2 operator-=(const V2& other) { x -= other.x; y -= other.y; return *this; }
+	[[nodiscard]] float Magnitude() const { return sqrt(x * x + y * y); }
+	[[nodiscard]] V2<float> GetNormalized() const {
+		float magnitude = Magnitude();
+		if (magnitude == 0) return V2<float>::Zero;
+		return *this / magnitude;
+	}
+	void SetNormalize() { *this = GetNormalized(); }
 
 	template<typename T2>
 	V2(const V2<T2>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}

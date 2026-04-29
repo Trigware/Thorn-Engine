@@ -1,5 +1,7 @@
 #pragma once
 #include "Component.h"
+#include "Transform.h"
+#include "DrawData.h"
 
 namespace ThornEngine {
 
