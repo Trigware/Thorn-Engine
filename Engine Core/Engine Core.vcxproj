@@ -148,6 +148,7 @@
     <ClInclude Include="src\Assets.h" />
     <ClInclude Include="src\AssetsParser.h" />
     <ClInclude Include="src\Component.h" />
+    <ClInclude Include="src\ComponentManager.h" />
     <ClInclude Include="src\DrawData.h" />
     <ClInclude Include="src\InputData.h" />
     <ClInclude Include="src\InputManager.h" />

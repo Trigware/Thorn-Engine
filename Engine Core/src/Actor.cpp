@@ -21,31 +21,31 @@ Actor Actor::operator[](int index) const {
 	if (index < 0 || index >= numberOfChildren) throw std::runtime_error("Attempted to access an invalid sub-actor!");
 
 	ActorData& selfData = GetData();
-	ActorUUID subActorUUID = selfData.subActors[index];
-	Actor subActor(sceneContext, subActorUUID);
+	ActorID subActorID = selfData.subActors[index];
+	Actor subActor(sceneContext, subActorID);
 	return subActor;
 }
 
 Actor Actor::Super() const {
 	ThrowIfFreed();
 	if (!HasSuper()) throw std::runtime_error("Attempted to access a super-actor from scene root!");
-	ActorUUID superUUID = GetData().superActor;
-	Actor superActor(sceneContext, superUUID);
+	ActorID superID = GetData().superActor;
+	Actor superActor(sceneContext, superID);
 	return superActor;
 }
 
 void Actor::Delete() {
 	ThrowIfFreed();
 	DeleteAllSub();
-	sceneContext->sceneActors.erase(selfUUID);
+	sceneContext->sceneActors.erase(selfID);
 }
 
-Actor::Actor(SceneContext* context) : sceneContext(context), selfUUID(MakeUUID()) {
+Actor::Actor(SceneContext* context) : sceneContext(context), selfID(MakeID()) {
 	ActorData& actorRef = GetData();
 	actorRef = ActorData(context);
 }
 
-Actor::Actor(const Actor& copy) { *this = Actor(copy.sceneContext, copy.selfUUID); }
+Actor::Actor(const Actor& copy) { *this = Actor(copy.sceneContext, copy.selfID); }
 
 void Actor::ThrowIfFreed() const {
 	if (IsInScene()) return;
@@ -57,13 +57,6 @@ void Actor::DeleteAllSub() {
 	for (int i = 0; i < subCount; i++) {
 		Actor subActor = (*this)[i];
 		subActor.Delete();
-	}
-}
-
-void ActorData::OnDraw() {
-	for (auto it = components.begin(); it != components.end(); it++) {
-		std::unique_ptr<IComponent>& currentComponent = it->second;
-		currentComponent->OnDraw();
 	}
 }
 

@@ -30,17 +30,17 @@ void SceneManager::HandleEvents() {
 }
 
 void IScene::DrawScene() {
-	for (auto it = sceneContext.sceneActors.begin(); it != sceneContext.sceneActors.end(); it++) {
-		ActorData& currentActor = it->second;
-		currentActor.OnDraw();
+	CompStorageMap& storageMap = sceneContext.componentManager.storages;
+	for (auto it = storageMap.begin(); it != storageMap.end(); it++) {
+		it->second->OnDraw();
 	}
 }
 
 void IScene::Init(AppContext* appContext) {
 	sceneContext.initailizingFieldActors = false;
 	sceneContext.appContext = appContext;
-	for (int i = 0; i < sceneContext.deferredActors.size(); i++) {
-		DeferredPtr& deferred = sceneContext.deferredActors[i];
+	for (auto it = sceneContext.deferredActors.begin(); it != sceneContext.deferredActors.end(); it++) {
+		DeferredPtr& deferred = it->second;
 		deferred->Make(deferred, &sceneContext);
 	}
 	sceneContext.deferredActors.clear();

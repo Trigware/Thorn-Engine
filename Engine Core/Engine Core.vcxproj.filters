@@ -78,6 +78,9 @@
     <ClInclude Include="src\InputData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ComponentManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\App.cpp">

@@ -5,13 +5,9 @@ enum class ActionID { MoveLeft, MoveRight, MoveUp, MoveDown };
 
 class StartScene : public TH::IScene {
 	TH::Actor spr = Top<TH::Sprite>(TextureID::TimerClock);
+
 	void OnDraw() override {
-		TH::V2F moveDir = TH::V2F::Zero;
-		if (Input.IsActionHeld(ActionID::MoveLeft)) moveDir.x--;
-		if (Input.IsActionHeld(ActionID::MoveRight)) moveDir.x++;
-		if (Input.IsActionHeld(ActionID::MoveUp)) moveDir.y--;
-		if (Input.IsActionHeld(ActionID::MoveDown)) moveDir.y++;
-		spr.Get<TH::TForm>().pos += moveDir.GetNormalized() * 5;
+		spr.Get<TH::TForm>().pos.x += 20;
 	}
 };
 

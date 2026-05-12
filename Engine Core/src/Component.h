@@ -24,18 +24,17 @@ public:
 	virtual ~IComponent() = default;
 	IComponent() = default;
 	virtual void OnDraw() {}
-	SceneContext* sceneContext = nullptr;
 	IComponent(SceneContext* context) : sceneContext(context) { }
 	inline Actor GetOwner();
 protected:
 	template<Resource Res, Enum ID>
 	ConditionalAsset<Res>* GetAsset(ID identifier) { return sceneContext->appContext->GetAsset<Res>(identifier); }
+	SceneContext* sceneContext = nullptr;
 private:
 	friend class Actor;
-	ActorUUID linkedActorUUID = 0;
+	ActorID linkedActorID = 0;
 };
 
-using ComponentMap = std::unordered_map<std::type_index, std::unique_ptr<IComponent>>;
 using ComponentSet = std::unordered_set<std::type_index>;
 
 class IActorType;
