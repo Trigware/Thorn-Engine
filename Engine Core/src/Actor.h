@@ -32,7 +32,7 @@ struct DeferredActor;
 using DeferredPtr = std::unique_ptr<DeferredActor>;
 
 struct Empty : public IActorType {
-	ComponentSet GetSet() override { return {}; }
+	static ComponentSet GetSet() { return {}; }
 };
 
 using BindFunctionType = std::function<void(DeferredPtr&, bool)>;
@@ -49,6 +49,8 @@ struct DeferredActor {
 	Actor* parentHandlePtr;
 	std::function<void(DeferredPtr&, SceneContext*)> constructionFunction;
 	std::vector<BindingFunction> bindingFunctions;
+	ComponentSet deferredComponentSet;
+
 	DeferredActor(ActorID deferred, Actor* parent) : deferredID(deferred), parentHandlePtr(parent) {}
 	void Make(DeferredPtr& deferredRef, SceneContext* context);
 };
@@ -63,16 +65,20 @@ public:
 	Actor(const Actor& copy);
 	Actor(SceneContext* context, ActorID id) : sceneContext(context), selfID(id) {}
 
+	inline Actor Add() { return Add<Empty>(); }
+
 	template<ActorTypeConcept T, typename... Args> Actor Add(Args&&... args) {
 		ActorID subActorID = MakeID();
 		bool deferringInit = sceneContext->initailizingFieldActors;
 		Actor subActorHandle(sceneContext, subActorID);
+		ActorData& subActorData = GetActorData(subActorID);
+		subActorData.nonRemovableComponents = T::GetSet();
 
 		if (deferringInit) { AddDeferred<T>(subActorID, args...); return subActorHandle; }
 		AddNow<T>(subActorID, args...); return subActorHandle;
 	}
 
-	template<ComponentConcept T> T& Get() {
+	template<ComponentConcept T> [[nodiscard]] T& Get() {
 		bool isInit = sceneContext->initailizingFieldActors;
 		if (isInit) return GetDeferredComponent<T>();
 
@@ -81,8 +87,6 @@ public:
 	}
 
 	template<ComponentConcept T, typename... Args> Actor& Bind(Args&&... args) {
-		if (Has<T>()) throw std::runtime_error("Attempted to bind a component of a type which has already been bound!");
-
 		bool deferringInit = sceneContext->initailizingFieldActors;
 		if (deferringInit) { HandleBindingDeferred<T>(false, args...); return *this; }
 
@@ -97,7 +101,7 @@ public:
 		}
 
 		boundComponent.linkedActorID = selfID;
-		sceneContext->componentManager.Bind<T>(selfID, boundComponent);
+		if (!Has<T>()) { sceneContext->componentManager.Bind<T>(selfID, boundComponent); return *this; }
 
 		return *this;
 	}
@@ -157,6 +161,8 @@ private:
 
 	template<ActorTypeConcept T, typename... Args> void AddDeferred(ActorID subActorID, Args&&... args) {
 		DeferredPtr deferred = std::make_unique<DeferredActor>(subActorID, this);
+		deferred->deferredComponentSet = T::GetSet();
+
 		deferred->constructionFunction = [...args = std::forward<Args>(args)](DeferredPtr& deferredRef, SceneContext* context) {
 			ActorID deferredID = deferredRef->deferredID;
 			deferredRef->parentHandlePtr->sceneContext = context;
@@ -168,6 +174,12 @@ private:
 
 	template<ComponentConcept T, typename... Args> void HandleBindingDeferred(bool isUnbinding, Args&&... args) {
 		DeferredPtr& deferred = GetDeferred();
+		std::type_index componentIndex = typeid(T);
+		ComponentSet& deferredCompSet = deferred->deferredComponentSet;
+		if (isUnbinding) deferredCompSet.erase(componentIndex);
+		else deferredCompSet.insert(componentIndex);
+		
+
 		deferred->bindingFunctions.emplace_back([...args = std::forward<Args>(args)](DeferredPtr& deferredRef, bool unbinding) {
 			if (unbinding) deferredRef->parentHandlePtr->Unbind<T>();
 			else deferredRef->parentHandlePtr->Bind<T>(args...);
@@ -175,7 +187,14 @@ private:
 	}
 
 	template<ComponentConcept T> T& GetDeferredComponent() {
-		T t; return t;
+		DeferredPtr& deferredActor = GetDeferred();
+		std::type_index componentIndex = typeid(T);
+		bool isComponentDeferred = deferredActor->deferredComponentSet.contains(componentIndex);
+		if (!isComponentDeferred) throw std::runtime_error("Generation of a deferred component is halted since adding it was not requested!");
+
+		T deferredComponent;
+		sceneContext->componentManager.Bind<T>(selfID, deferredComponent);
+		return sceneContext->componentManager.Get<T>(selfID);
 	}
 
 	template<ActorTypeConcept T, typename... Args> void AddNow(ActorID subActorID, Args&&... args) {
@@ -187,7 +206,6 @@ private:
 		if constexpr (!isEmptyActorType) {
 			Actor subActorHandle(sceneContext, subActorID);
 			T actorBuilder = T(subActorHandle, args...);
-			subActorHandle.GetData().nonRemovableComponents = std::move(actorBuilder.GetSet());
 		}
 
 		subActorData.superActor = selfID;

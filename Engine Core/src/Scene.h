@@ -20,6 +20,7 @@ public:
 	virtual void OnDraw() {}
 	inline Actor Root() { return sceneRoot; }
 	template<ActorTypeConcept T, typename... Args> Actor Top(Args&&... args) { return Root().Add<T>(args...); }
+	inline Actor Top() { return Top<Empty>(); }
 	InputManager Input;
 private:
 	friend class SceneManager;

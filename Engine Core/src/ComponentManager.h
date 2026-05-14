@@ -54,7 +54,7 @@ public:
 	template<typename T>
 	T& Get(uint64_t actorID) {
 		bool hasComponent = Has<T>(actorID);
-		if (!hasComponent) throw std::runtime_error("Attempted to get a component which is not available for this actor!");;
+		if (!hasComponent) throw std::runtime_error("Attempted to get a component which is not available for this actor!");
 
 		ComponentStorage<T>& componentStorage = GetStorage<T>();
 		return componentStorage.components.at(actorID);

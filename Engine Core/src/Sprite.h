@@ -15,7 +15,7 @@ struct Sprite : IActorType {
 	inline Sprite(Actor owner, T identifier, V2F position = V2F::Zero, V2F scale = V2F::One) {
 		owner.Bind<Transform>(position, scale).Bind<DrawData>(identifier);
 	}
-	ComponentSet GetSet() override { return CompSet<Transform, DrawData>(); }
+	static ComponentSet GetSet() { return CompSet<Transform, DrawData>(); }
 };
 
 }

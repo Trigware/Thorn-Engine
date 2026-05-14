@@ -4,10 +4,12 @@ enum class TextureID { TimerClock, GridTiles };
 enum class ActionID { MoveLeft, MoveRight, MoveUp, MoveDown };
 
 class StartScene : public TH::IScene {
-	TH::Actor spr = Top<TH::Sprite>(TextureID::TimerClock);
+	TH::Actor clock = Top<TH::Sprite>(TextureID::TimerClock), grid = Top<TH::Sprite>(TextureID::GridTiles);
+	TH::TForm &tClock = clock.Get<TH::TForm>(), &tGrid = grid.Get<TH::TForm>();
 
 	void OnDraw() override {
-		spr.Get<TH::TForm>().pos.x += 20;
+		tClock.pos.x += 10;
+		tGrid.pos.y += 10;
 	}
 };
 
